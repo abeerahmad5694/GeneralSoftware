@@ -192,6 +192,7 @@ function addToLocalCart(products) {
       cart_row_id: create_unique_row_no(),
       id: productId,
       product_description: product[POS_MAPPING.product.prod_name] || product.prod_name || product.product_description,
+      prod_name_ur: product.prod_name_ur || "",
       qty: qtyToAdd,
       packing_mode: Number(defaultModeId),
       prices: { ...prices },

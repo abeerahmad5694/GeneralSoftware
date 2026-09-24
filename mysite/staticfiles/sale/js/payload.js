@@ -81,6 +81,7 @@ export function buildBillPayload({
       return {
         inv_id: i.id,
         prod_name: i.product_description,
+        product_name_ur: i.prod_name_ur || "",
         qty: i.qty,
         rate: i.rate,
         packing_mode: i.packing_mode || 1,

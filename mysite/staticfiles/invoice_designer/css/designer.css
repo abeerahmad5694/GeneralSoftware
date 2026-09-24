@@ -521,4 +521,113 @@ body {
     /* Thermal receipts: shrink page margins so the full receipt width
        is used and the browser doesn't clip content. */
     @page { margin: 0; }
+
+    /* Embed Nastaleeq font for PDF/print so it doesn't depend on system fonts */
+    @font-face {
+        font-family: 'Jameel Noori Nastaleeq';
+        src: url('../fonts/JameelNooriNastaleeq.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+}
+
+/* ==========================================================================
+   Urdu / Nastaleeq Support
+   ========================================================================== */
+
+/* Font face declarations (screen + print) */
+@font-face {
+    font-family: 'Jameel Noori Nastaleeq';
+    src: url('{% static "invoice_designer/fonts/JameelNooriNastaleeq.ttf" %}') format('truetype'),
+         url('../fonts/JameelNooriNastaleeq.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: block;
+}
+
+/* Core Urdu text class — applied to any element that carries Urdu text */
+.urdu-font {
+    font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Aleem Nastaleeq', serif !important;
+    direction: rtl;
+    unicode-bidi: bidi-override;
+    text-align: right;
+    line-height: 2;          /* Nastaleeq ascenders/descenders need extra line height */
+    letter-spacing: 0;
+}
+
+/* Full RTL document wrapper */
+.urdu-doc {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Section inside a Urdu document */
+.urdu-section {
+    direction: rtl;
+    text-align: right;
+    border-top: 1px dashed #ccc;
+    padding-top: 4px;
+    margin-top: 4px;
+}
+
+/* Urdu totals row — value on left (numerals stay LTR), label on right */
+.urdu-total-row {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+    direction: rtl;
+}
+.urdu-total-row span:last-child {
+    /* numeric value — always LTR regardless of page direction */
+    direction: ltr;
+    unicode-bidi: isolate;
+}
+
+/* Bilingual header table */
+.bilingual-header-table {
+    border-collapse: collapse;
+    width: 100%;
+}
+.bilingual-header-table td {
+    vertical-align: top;
+    padding: 2px 6px;
+}
+
+/* Bilingual customer row — EN on right, UR on left */
+.bilingual-customer-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px dotted #e0e0e0;
+    padding: 2px 0;
+}
+
+/* Bilingual items table — keep numeric columns LTR */
+.bilingual-doc .doc-item-table td,
+.bilingual-doc .doc-item-table th {
+    unicode-bidi: isolate;
+}
+
+/* Designer canvas: highlight urdu sections with a subtle RTL indicator */
+.studio .urdu-section::before {
+    content: 'اردو';
+    font-family: 'Jameel Noori Nastaleeq', serif;
+    font-size: 8px;
+    color: #8890a0;
+    float: left;
+    margin-right: 4px;
+}
+
+/* Print: ensure Nastaleeq font is embedded and Urdu sections render correctly */
+@media print {
+    .urdu-font {
+        font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', serif !important;
+    }
+    .urdu-doc, .urdu-section {
+        direction: rtl !important;
+    }
+    .urdu-total-row {
+        display: flex !important;
+        flex-direction: row-reverse !important;
+    }
 }

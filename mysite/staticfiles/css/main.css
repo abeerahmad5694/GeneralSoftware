@@ -941,3 +941,43 @@ input[type="number"] {
 
 
 
+/* ========== SIDEBAR ALWAYS ON TOP - MOBILE ========== */
+#sidebar {
+  z-index: 10000 !important;
+}
+#mobileOverlay {
+  z-index: 9999 !important;
+}
+.mobile-header {
+  z-index: 9998 !important;
+}
+#themePanel {
+  z-index: 10001 !important;
+}
+#themePanel .panel-backdrop {
+  z-index: 10001 !important;
+}
+#themePanel .panel-body {
+  z-index: 10002 !important;
+}
+
+/* Force POS bottom bar BEHIND sidebar */
+.bottom-buttons {
+  z-index: 30 !important; /* was 9999 - that's why it covered sidebar */
+}
+
+/* Also loader, modals behind sidebar on mobile */
+#loader, .custom-modal, #receipt-modal {
+  z-index: 5000 !important;
+}
+
+@media (max-width: 768px) {
+  #sidebar {
+    z-index: 10000 !important;
+    position: fixed !important;
+  }
+  #sidebar.mobile-open {
+    transform: translateX(0) !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3) !important;
+  }
+}

@@ -122,6 +122,7 @@ export function buildBillPayload({
       const rowItem = {
         inv_id: item.id,
         prod_name: item.product_description,
+        product_name_ur: item.prod_name_ur || "",
         qty: is_return && item.qty > 0 && false? -1 * item.qty : item.qty,
         rate: item.rate,
         packing_mode: item.packing_mode || 1,

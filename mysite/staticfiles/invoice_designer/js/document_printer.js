@@ -221,6 +221,12 @@ window.DocumentPrinter = (function () {
                             <option value="thermal_80">Thermal 80mm</option>
                             <option value="a5">A5</option>
                             <option value="a4">A4</option>
+                            <option value="urdu_58mm">Thermal 58mm — Urdu</option>
+                            <option value="urdu_80mm">Thermal 80mm — Urdu</option>
+                            <option value="urdu_a5">A5 — Urdu</option>
+                            <option value="urdu_a4">A4 — Urdu</option>
+                            <option value="bilingual_80mm">Thermal 80mm — Bilingual</option>
+                            <option value="bilingual_a4">A4 — Bilingual</option>
                         </select>
                         <div class="spacer"></div>
                         <button id="print-modal-print-button">Print</button>
