@@ -59,18 +59,46 @@ ALLOWED_HOSTS = ['*']
 
 
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://maternal-entrap-edge.ngrok-free.dev',
-    'https://*.ngrok-free.dev',
-    'https://*.ngrok-free.app',
-    'https://races-plates-store-suspension.trycloudflare.com',
-    'https://*.trycloudflare.com',
-]
+import os
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
+# ---------------------------------------------------------------------------
+# PythonAnywhere / Deployment detection
+# ---------------------------------------------------------------------------
+# Set PA_HOSTNAME in your PA Web tab environment variables:
+#   PA_HOSTNAME = abeer5694.pythonanywhere.com
+_PA_HOST = os.environ.get('PA_HOSTNAME', '')  # e.g. "abeer5694.pythonanywhere.com"
+_IS_PYTHONANYWHERE = bool(_PA_HOST)
+
+if _IS_PYTHONANYWHERE:
+    # PythonAnywhere sits behind an nginx reverse proxy that already handles HTTPS.
+    # SECURE_PROXY_SSL_HEADER is required so Django sees requests as HTTPS,
+    # but ONLY when you actually know the proxy sends that header.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+
+    # The session cookie must be sent over HTTPS. PythonAnywhere always uses HTTPS.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+
+    CSRF_TRUSTED_ORIGINS = [
+        f'https://{_PA_HOST}',
+        'https://*.pythonanywhere.com',
+    ]
+else:
+    # Local dev / ngrok / cloudflare tunnel
+    CSRF_TRUSTED_ORIGINS = [
+        'https://maternal-entrap-edge.ngrok-free.dev',
+        'https://*.ngrok-free.dev',
+        'https://*.ngrok-free.app',
+        'https://races-plates-store-suspension.trycloudflare.com',
+        'https://*.trycloudflare.com',
+    ]
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    USE_X_FORWARDED_HOST = True
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
 
 
 # CSRF_TRUSTED_ORIGINS = [

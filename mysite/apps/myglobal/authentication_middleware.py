@@ -9,13 +9,22 @@ class loginrequiredmiddleware:
     
     
     def __call__(self,request):
-        if request.path.startswith('/admin'):
+        path = request.path_info
+        if (
+            path.startswith('/admin') or 
+            path.startswith(settings.STATIC_URL) or 
+            path.startswith(settings.MEDIA_URL) or 
+            path == '/favicon.ico' or 
+            path == settings.LOGIN_URL or
+            path == settings.LOGOUT_URL
+        ):
             return self.get_response(request)
-        if not request.user.is_authenticated and request.path not in (settings.LOGIN_URL,settings.LOGOUT_URL):
-            return redirect(settings.LOGIN_URL)
+            
+        if not request.user.is_authenticated:
+            # We use request.get_full_path() so query params like ?next= are preserved if needed
+            return redirect(f"{settings.LOGIN_URL}?next={request.get_full_path()}")
 
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
 
 

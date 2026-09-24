@@ -17,7 +17,10 @@ digit_map_encode = {v: k for k, v in digit_map_decode.items()}
 APP_NAME = "AlphaServer"
 
 def get_license_path():
-    base = os.getenv("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")
+    if os.name == 'nt':
+        base = os.getenv("LOCALAPPDATA") or os.path.expanduser("~\\AppData\\Local")
+    else:
+        base = os.path.expanduser("~/.config")
     path = os.path.join(base, APP_NAME)
     Path(path).mkdir(parents=True, exist_ok=True)
     return os.path.join(path, "license.dat")
