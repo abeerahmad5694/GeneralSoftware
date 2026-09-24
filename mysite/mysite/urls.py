@@ -20,8 +20,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve
 
+from apps.myglobal.views.debug_view import debug_auth
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('debug/', debug_auth),           # TEMP: remove after diagnosis
     path('', include('django.contrib.auth.urls')),
     path('inventory/', include('apps.inventory.urls')),
     path('myaccounts/', include('apps.myaccounts.urls')),

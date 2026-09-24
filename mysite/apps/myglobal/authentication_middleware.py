@@ -12,16 +12,17 @@ class loginrequiredmiddleware:
         path = request.path_info
         if (
             path.startswith('/admin') or 
+            path.startswith('/debug/') or   # TEMP: remove after diagnosis
             path.startswith(settings.STATIC_URL) or 
             path.startswith(settings.MEDIA_URL) or 
             path == '/favicon.ico' or 
             path == settings.LOGIN_URL or
-            path == settings.LOGOUT_URL
+            path == settings.LOGOUT_URL or
+            path.startswith(settings.LOGIN_URL)  # covers /login/?next=...
         ):
             return self.get_response(request)
             
         if not request.user.is_authenticated:
-            # We use request.get_full_path() so query params like ?next= are preserved if needed
             return redirect(f"{settings.LOGIN_URL}?next={request.get_full_path()}")
 
         return self.get_response(request)
