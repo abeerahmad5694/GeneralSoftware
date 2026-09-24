@@ -1,3 +1,183 @@
+
+
+
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
+
+from apps.myaccounts.models import Accounts
+
+DEFAULT_ACCOUNTS = [
+
+    # =====================================================
+    # LEVEL 1
+    # =====================================================
+
+    (1,   1, 1, 'Group', 'Assets',     'ASSETS'),
+    (2,  10, 1, 'Group', 'Liability',  'LIABILITIES'),
+    (3,  20, 1, 'Group', 'Expense',    'EXPENSES'),
+    (4,  30, 1, 'Group', 'Income',     'REVENUE'),
+
+    # =====================================================
+    # ASSETS
+    # =====================================================
+
+    # LEVEL 2
+    (11,  2, 2, 'Group', 'Assets', 'CURRENT ASSETS'),
+    (12,  3, 2, 'Group', 'Assets', 'FIXED ASSETS'),
+
+    # LEVEL 3
+    (110, 4, 3, 'Group', 'Assets', 'CASH'),
+    (111, 5, 3, 'Group', 'Assets', 'BANK BALANCES'),
+    (112, 6, 3, 'Group', 'Asset',  'ACCOUNTS RECEIVABLES'),
+    (117, 7, 3, 'Group', 'Asset',  'RAW MATERIAL/STOCK/INVENTORY'),
+    (118, 8, 3, 'Group', 'Assets', 'FINISHED PRODUCT'),
+    (121, 9, 3, 'Group', 'Assets', 'FIXED ASSETS'),
+
+    #level 4
+    (110000001, 10, 4, 'Detail', 'Asset', 'CASH BOOK'),
+    (111000001, 11, 4, 'Detail', 'Asset', 'BANK'),
+    (112000001, 12, 4, 'Detail', 'Asset', 'CASH CLIENT'),
+    # (117000001, 13, 4, 'Detail', 'Asset', 'RAW MATERIAL/STOCK/INVENTORY'),
+    # (118000001, 14, 4, 'Detail', 'Asset', 'FINISHED PRODUCT'),
+    # (121000001, 15, 4, 'Detail', 'Asset', 'FIXED ASSETS'),
+
+    # =====================================================
+    # LIABILITIES
+    # =====================================================
+
+    # LEVEL 2
+    (21, 11, 2, 'Group', 'Liability', 'EQUITY'),
+    (22, 12, 2, 'Group', 'Liability', 'WITHDRAWALS'),
+    (23, 13, 2, 'Group', 'Liability', 'CURRENT LIABILITIES'),
+
+    # LEVEL 3
+    (211, 14, 3, 'Group', 'Liability', 'CAPITAL'),
+    (231, 15, 3, 'Group', 'Liability', 'ACCOUNTS PAYABLE'),
+    (232, 16, 3, 'Group', 'Liability', 'WAGES/LABOUR PAYABLE'),
+    (233, 17, 3, 'Group', 'Liability', 'FREIGHT PAYABLE'),
+
+    # level 4
+    (231000001, 18, 4, 'Detail', 'Liability', 'OPENING STOCK'),
+    (232000001, 19, 4, 'Detail', 'Liability', 'LABOUR'),
+    (233000001, 20, 4, 'Detail', 'Liability', 'CARRIAGE'),
+    
+    
+
+
+    # =====================================================
+    # EXPENSES
+    # =====================================================
+
+    # LEVEL 2
+    (31, 21, 2, 'Group', 'Expense', 'COST OF GOODS SOLD'),
+    (32, 22, 2, 'Group', 'Expense', 'PRODUCTION & SELLING EXPENSES'),
+    (33, 23, 2, 'Group', 'Expense', 'ADMINISTRATIVE EXPENSES'),
+    (34, 24, 2, 'Group', 'Expense', 'FINANCIAL EXPENSES'),
+
+    # LEVEL 3
+    (311, 25, 3, 'Group', 'Expense', 'COST OF SALES'),
+    (321, 26, 3, 'Group', 'Expense', 'WAGES/LABOUR CHARGES'),
+    (322, 27, 3, 'Group', 'Expense', 'PACKING EXPENSES'),
+
+    # level 4
+    (311000001, 28, 4, 'Detail', 'Expense', 'COST OF SALES'),
+    # =====================================================
+    # INCOME
+    # =====================================================
+
+    # LEVEL 2
+    (41, 31, 2, 'Group', 'Income', 'REVENUE (SALES)'),
+    (42, 32, 2, 'Group', 'Income', 'TRANSPORTATION INCOME'),
+    (43, 33, 2, 'Group', 'Income', 'OTHER INCOME'),
+
+    # LEVEL 3
+    (411, 34, 3, 'Group', 'Income', 'SALES'),
+
+]
+@receiver(post_migrate)
+def create_default_accounts(sender, **kwargs):
+    if sender.name != 'apps.myaccounts':
+        return
+
+    print("\n[Accounts Initialization] Checking...")
+
+    # ---------------------------------------------------------
+    # 1. Ensure organizational data exists - BUT DON'T OVERWRITE
+    # ---------------------------------------------------------
+    from apps.configuration.models import Company, Branch, POSTerminal, CompanyConfiguration
+    from apps.users.models import Role
+
+    # Company - if ANY company exists, use it, don't create id=1
+    if Company.objects.exists():
+        company = Company.objects.first()
+        print(f" - Company: Already exists '{company.name}', skipping.")
+    else:
+        company, _ = Company.objects.get_or_create(name="Main Company")
+        print(f" - Company: Created '{company.name}'.")
+
+    if Branch.objects.exists():
+        branch = Branch.objects.first()
+        print(f" - Branch: Already exists '{branch.name}', skipping.")
+    else:
+        branch, _ = Branch.objects.get_or_create(name="Main Branch", company=company)
+        print(f" - Branch: Created.")
+
+    if POSTerminal.objects.exists():
+        terminal = POSTerminal.objects.first()
+        print(f" - Terminal: Already exists, skipping.")
+    else:
+        terminal, _ = POSTerminal.objects.get_or_create(name="Main Terminal", branch=branch, company=company)
+        print(f" - Terminal: Created.")
+
+    if CompanyConfiguration.objects.exists():
+        print(f" - CompanyConfiguration: Already exists, skipping.")
+    else:
+        CompanyConfiguration.objects.get_or_create(company=company, branch=branch)
+        print(f" - CompanyConfiguration: Created.")
+
+    if Role.objects.exists():
+        print(f" - Roles: Already exists ({Role.objects.count()}), skipping.")
+    else:
+        for role_name in ['Admin', 'Manager', 'Staff']:
+            Role.objects.get_or_create(name=role_name, company=company)
+        print(f" - Roles: Created.")
+
+    # ---------------------------------------------------------
+    # 2. Accounts - create ONLY if table is empty
+    # ---------------------------------------------------------
+    if Accounts.objects.exists():
+        print(f" - Accounts: Already exists ({Accounts.objects.count()} accounts), skipping creation. No data modified.")
+        print("[Accounts Initialization] Complete - no existing data was modified.\n")
+        return
+
+    # Table is empty - safe to bulk create
+    accounts = [
+        Accounts(
+            ACC_CODE=acc_code,
+            SERIAL_NO=serial_no,
+            LEVEL=level,
+            TYPE=type_,
+            CLASS_FIELD=class_field,
+            ACC_NAME=name,
+            ENABLE='Y',
+        )
+        for (acc_code, serial_no, level, type_, class_field, name) in DEFAULT_ACCOUNTS
+    ]
+
+    Accounts.objects.bulk_create(accounts, ignore_conflicts=True, batch_size=1000)
+    print(f" - Accounts: Created {len(accounts)} default accounts.")
+    print("[Accounts Initialization] Complete.\n")
+
+
+
+
+
+
+
+
+
+
+
 # # accounts/signals.py
 
 # from django.db.models.signals import post_migrate
@@ -343,155 +523,3 @@
 
 
 # myaccounts/signals.py
-
-from django.db.models.signals import post_migrate
-from django.dispatch import receiver
-
-from apps.myaccounts.models import Accounts
-
-DEFAULT_ACCOUNTS = [
-
-    # =====================================================
-    # LEVEL 1
-    # =====================================================
-
-    (1,   1, 1, 'Group', 'Assets',     'ASSETS'),
-    (2,  10, 1, 'Group', 'Liability',  'LIABILITIES'),
-    (3,  20, 1, 'Group', 'Expense',    'EXPENSES'),
-    (4,  30, 1, 'Group', 'Income',     'REVENUE'),
-
-    # =====================================================
-    # ASSETS
-    # =====================================================
-
-    # LEVEL 2
-    (11,  2, 2, 'Group', 'Assets', 'CURRENT ASSETS'),
-    (12,  3, 2, 'Group', 'Assets', 'FIXED ASSETS'),
-
-    # LEVEL 3
-    (110, 4, 3, 'Group', 'Assets', 'CASH'),
-    (111, 5, 3, 'Group', 'Assets', 'BANK BALANCES'),
-    (112, 6, 3, 'Group', 'Asset',  'ACCOUNTS RECEIVABLES'),
-    (117, 7, 3, 'Group', 'Asset',  'RAW MATERIAL/STOCK/INVENTORY'),
-    (118, 8, 3, 'Group', 'Assets', 'FINISHED PRODUCT'),
-    (121, 9, 3, 'Group', 'Assets', 'FIXED ASSETS'),
-
-    #level 4
-    (110000001, 10, 4, 'Detail', 'Asset', 'CASH BOOK'),
-    (111000001, 11, 4, 'Detail', 'Asset', 'BANK'),
-    (112000001, 12, 4, 'Detail', 'Asset', 'CASH CLIENT'),
-    # (117000001, 13, 4, 'Detail', 'Asset', 'RAW MATERIAL/STOCK/INVENTORY'),
-    # (118000001, 14, 4, 'Detail', 'Asset', 'FINISHED PRODUCT'),
-    # (121000001, 15, 4, 'Detail', 'Asset', 'FIXED ASSETS'),
-
-    # =====================================================
-    # LIABILITIES
-    # =====================================================
-
-    # LEVEL 2
-    (21, 11, 2, 'Group', 'Liability', 'EQUITY'),
-    (22, 12, 2, 'Group', 'Liability', 'WITHDRAWALS'),
-    (23, 13, 2, 'Group', 'Liability', 'CURRENT LIABILITIES'),
-
-    # LEVEL 3
-    (211, 14, 3, 'Group', 'Liability', 'CAPITAL'),
-    (231, 15, 3, 'Group', 'Liability', 'ACCOUNTS PAYABLE'),
-    (232, 16, 3, 'Group', 'Liability', 'WAGES/LABOUR PAYABLE'),
-    (233, 17, 3, 'Group', 'Liability', 'FREIGHT PAYABLE'),
-
-    # level 4
-    (231000001, 18, 4, 'Detail', 'Liability', 'OPENING STOCK'),
-    (232000001, 19, 4, 'Detail', 'Liability', 'LABOUR'),
-    (233000001, 20, 4, 'Detail', 'Liability', 'CARRIAGE'),
-    
-    
-
-
-    # =====================================================
-    # EXPENSES
-    # =====================================================
-
-    # LEVEL 2
-    (31, 21, 2, 'Group', 'Expense', 'COST OF GOODS SOLD'),
-    (32, 22, 2, 'Group', 'Expense', 'PRODUCTION & SELLING EXPENSES'),
-    (33, 23, 2, 'Group', 'Expense', 'ADMINISTRATIVE EXPENSES'),
-    (34, 24, 2, 'Group', 'Expense', 'FINANCIAL EXPENSES'),
-
-    # LEVEL 3
-    (311, 25, 3, 'Group', 'Expense', 'COST OF SALES'),
-    (321, 26, 3, 'Group', 'Expense', 'WAGES/LABOUR CHARGES'),
-    (322, 27, 3, 'Group', 'Expense', 'PACKING EXPENSES'),
-
-    # level 4
-    (311000001, 28, 4, 'Detail', 'Expense', 'COST OF SALES'),
-    # =====================================================
-    # INCOME
-    # =====================================================
-
-    # LEVEL 2
-    (41, 31, 2, 'Group', 'Income', 'REVENUE (SALES)'),
-    (42, 32, 2, 'Group', 'Income', 'TRANSPORTATION INCOME'),
-    (43, 33, 2, 'Group', 'Income', 'OTHER INCOME'),
-
-    # LEVEL 3
-    (411, 34, 3, 'Group', 'Income', 'SALES'),
-
-]
-
-@receiver(post_migrate)
-def create_default_accounts(sender, **kwargs):
-
-    # RUN ONLY FOR THIS APP
-    if sender.name != 'apps.myaccounts':
-        return
-
-    # Ensure default organizational data exists to satisfy foreign key constraints
-    from apps.configuration.models import Company, Branch, POSTerminal, CompanyConfiguration
-    from apps.users.models import Role
-
-    company, _ = Company.objects.get_or_create(id=1, defaults={"name": "Main Company"})
-    branch, _ = Branch.objects.get_or_create(id=1, defaults={"name": "Main Branch", "company": company})
-    terminal, _ = POSTerminal.objects.get_or_create(id=1, defaults={"name": "Main Terminal", "branch": branch, "company": company})
-    CompanyConfiguration.objects.get_or_create(company=company, branch=branch)
-    
-    default_roles = ['Admin', 'Manager', 'Staff']
-    for role_name in default_roles:
-        Role.objects.get_or_create(name=role_name, company=company)
-
-    # PREPARE OBJECTS
-    accounts = [
-
-        Accounts(
-
-            ACC_CODE=acc_code,
-            SERIAL_NO=serial_no,
-            LEVEL=level,
-            TYPE=type_,
-            CLASS_FIELD=class_field,
-            ACC_NAME=name,
-            ENABLE='Y',
-
-        )
-
-        for (
-            acc_code,
-            serial_no,
-            level,
-            type_,
-            class_field,
-            name
-        ) in DEFAULT_ACCOUNTS
-    ]
-
-    # SINGLE QUERY INSERT
-    Accounts.objects.bulk_create(
-
-        accounts,
-
-        ignore_conflicts=True,   # skips existing accounts
-
-        batch_size=1000
-
-    )
-
-    print("Default Accounts Created Successfully")
