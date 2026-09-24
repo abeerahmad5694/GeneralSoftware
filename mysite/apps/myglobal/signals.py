@@ -91,9 +91,28 @@ def create_default_data(sender, **kwargs):
     # ---------------------------------------------------------
     # 3. Create Default Custom Roles
     # ---------------------------------------------------------
+    # default_roles = ['Admin', 'Manager', 'Staff']
+    # for role_name in default_roles:
+    #     Role.objects.get_or_create(name=role_name, company=company)
+
+    # ---------------------------------------------------------
+# 3. Create Default Custom Roles
+# ---------------------------------------------------------
     default_roles = ['Admin', 'Manager', 'Staff']
+
     for role_name in default_roles:
-        Role.objects.get_or_create(name=role_name, company=company)
+        role, _ = Role.objects.get_or_create(
+            name=role_name,
+            company=company
+        )
+
+        # Give Admin role ALL permissions
+        if role_name == 'Admin':
+            all_permissions = Permission.objects.all()
+            role.permissions.set(all_permissions)
+
+            print(f" - Admin Role: {all_permissions.count()} permissions assigned.")
+
 
     # ---------------------------------------------------------
     # 4. Create Superuser and assigned Profile
