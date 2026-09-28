@@ -369,6 +369,9 @@
             <button type="button" class="erp-tab-btn" onclick="switchTab('tab-inventory')">
                 <i class="fas fa-boxes"></i> Inventory
             </button>
+            <button type="button" class="erp-tab-btn" onclick="switchTab('tab-vouchers')">
+                <i class="fas fa-receipt"></i> Vouchers
+            </button>
             <button type="button" class="erp-tab-btn" onclick="switchTab('tab-general')">
                 <i class="fas fa-cog"></i> General &amp; Printing
             </button>
@@ -721,6 +724,249 @@
                 </div>
             </div>
         </div>
+        
+
+
+
+
+        <!-- 4. Vouchers Tab -->
+<div id="tab-vouchers" class="tab-content">
+    {% comment %} 
+        <div class="config-card hidden">
+
+            <h3 class="card-section-title">
+                <i class="fas fa-receipt"></i>
+                Voucher Controls
+            </h3>
+
+            <div class="config-grid">
+
+                <!-- Allow Edit -->
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <span>Allow Voucher Editing</span>
+                        <small>
+                            Allow users to edit existing vouchers.
+                        </small>
+                    </div>
+
+                    <label class="switch">
+                        <input
+                            type="checkbox"
+                            name="voucher_allow_edit"
+                            {% if config.vouchers.allow_edit %}checked{% endif %}
+                        >
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+
+                <!-- Allow Delete -->
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <span>Allow Voucher Deletion</span>
+                        <small>
+                            Allow users to delete existing vouchers.
+                        </small>
+                    </div>
+
+                    <label class="switch">
+                        <input
+                            type="checkbox"
+                            name="voucher_allow_delete"
+                            {% if config.vouchers.allow_delete %}checked{% endif %}
+                        >
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+
+                <!-- Require Remarks -->
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <span>Require Voucher Remarks</span>
+                        <small>
+                            Require remarks before saving a voucher.
+                        </small>
+                    </div>
+
+                    <label class="switch">
+                        <input
+                            type="checkbox"
+                            name="voucher_require_remarks"
+                            {% if config.vouchers.require_remarks %}checked{% endif %}
+                        >
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+
+                <!-- Backdated -->
+                <div class="toggle-row">
+                    <div class="toggle-info">
+                        <span>Allow Backdated Vouchers</span>
+                        <small>
+                            Allow users to create vouchers with an earlier date.
+                        </small>
+                    </div>
+
+                    <label class="switch">
+                        <input
+                            type="checkbox"
+                            name="voucher_allow_backdated"
+                            {% if config.vouchers.allow_backdated %}checked{% endif %}
+                        >
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+            </div>
+
+        </div> 
+    {% endcomment %}
+
+    <!-- Printing -->
+    <div class="config-card">
+
+        <h3 class="card-section-title">
+            <i class="fas fa-print"></i>
+            Voucher Printing Preferences
+        </h3>
+
+        <div class="config-grid">
+
+            <div class="config-item">
+
+                <label>
+                    Default Voucher Print Format
+                </label>
+
+                <select
+                    name="voucher_default_page_size"
+                    class="config-input"
+                >
+
+                    <option
+                        value="thermal_80"
+                        {% if config.vouchers.default_page_size == 'thermal_80' %}
+                        selected
+                        {% endif %}
+                    >
+                        Thermal 80mm
+                    </option>
+
+                    <option
+                        value="thermal_58"
+                        {% if config.vouchers.default_page_size == 'thermal_58' %}
+                        selected
+                        {% endif %}
+                    >
+                        Thermal 58mm
+                    </option>
+
+                    <option
+                        value="A4"
+                        {% if config.vouchers.default_page_size == 'A4' %}
+                        selected
+                        {% endif %}
+                    >
+                        A4
+                    </option>
+
+                    <option
+                        value="A5"
+                        {% if config.vouchers.default_page_size == 'A5' %}
+                        selected
+                        {% endif %}
+                    >
+                        A5
+                    </option>
+
+                    <option
+                        value="urdu_80mm"
+                        {% if config.vouchers.default_page_size == 'urdu_80mm' %}
+                        selected
+                        {% endif %}
+                    >
+                        Thermal 80mm — Urdu
+                    </option>
+
+                    <option
+                        value="urdu_a4"
+                        {% if config.vouchers.default_page_size == 'urdu_a4' %}
+                        selected
+                        {% endif %}
+                    >
+                        A4 — Urdu
+                    </option>
+
+                    <option
+                        value="bilingual_80mm"
+                        {% if config.vouchers.default_page_size == 'bilingual_80mm' %}
+                        selected
+                        {% endif %}
+                    >
+                        Thermal 80mm — Bilingual
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div
+                class="toggle-row"
+                style="align-self: flex-end;"
+            >
+
+                <div class="toggle-info">
+
+                    <span>
+                        Direct Printing for Voucher
+                    </span>
+
+                    <small>
+                        Print directly without preview popup.
+                    </small>
+
+                </div>
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        name="voucher_default_direct_print_checked"
+                        {% if config.vouchers.default_direct_print_checked %}
+                        checked
+                        {% endif %}
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         <!-- 5. General Tab -->
         <div id="tab-general" class="tab-content">

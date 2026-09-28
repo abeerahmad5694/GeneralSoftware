@@ -47,7 +47,7 @@ def create_default_data(sender, **kwargs):
         {'name': 'View Daybook', 'code': 'view_daybook', 'module': 'reports'},
         {'name': 'View Comprehensive Sale', 'code': 'view_comprehensive_sale', 'module': 'reports'},
         {'name': 'View Quotation Book', 'code': 'view_quotation_book', 'module': 'reports'},
-        {'name': 'View Stock Report', 'code': 'view_stock_report', 'module': 'reports'},
+        {'name': 'View And Update Inventory', 'code': 'view_and_update_inventory', 'module': 'reports'},
     ]
 
     if Permission.objects.exists():

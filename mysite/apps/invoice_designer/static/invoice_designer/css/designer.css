@@ -443,7 +443,7 @@ body {
     position: fixed;
     inset: 0;
     background: rgba(15, 17, 22, 0.72);
-    z-index: 1000;
+    z-index: 10002;
     align-items: center;
     justify-content: center;
 }
@@ -560,8 +560,7 @@ body {
 /* Font face declarations (screen + print) */
 @font-face {
     font-family: 'Jameel Noori Nastaleeq';
-    src: url('{% static "invoice_designer/fonts/JameelNooriNastaleeq.ttf" %}') format('truetype'),
-         url('../fonts/JameelNooriNastaleeq.ttf') format('truetype');
+    src:url('../fonts/JameelNooriNastaleeq.ttf') format('truetype');
     font-weight: normal;
     font-style: normal;
     font-display: block;
@@ -574,6 +573,7 @@ body {
     text-align: right;
     line-height: 2;          /* Nastaleeq ascenders/descenders need extra line height */
     letter-spacing: 0;
+    padding: 0px 5px;
 }
 
 /* Full RTL document wrapper */

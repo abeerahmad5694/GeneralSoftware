@@ -99,7 +99,7 @@
                         <a href="{% url 'stock_report' %}">Stock Report</a>
                         {% endif %}
                         
-                        {% if 'edit_item' in user_perm_codes %}
+                        {% if 'view_and_update_inventory' in user_perm_codes %}
                         <a href="{% url 'inventory_update' %}">Bulk Inventory Update</a>
                         {% endif %}
                         <!-- <a href="#">Warehouse</a>
