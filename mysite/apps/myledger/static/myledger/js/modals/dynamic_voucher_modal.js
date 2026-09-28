@@ -360,33 +360,37 @@ async function saveUpdateDynamicVoucher() {
             // Print/Preview the voucher after save
             const savedVno = response.vno || vno;
             if (savedVno && savedVno !== "0" && window.DocumentPrinter) {
-                const billNumber = `${voucherType}-${savedVno}`;
-                window.DocumentPrinter.openPreviewModal({
-                    documentType: "voucher",
-                    pageType: "a4",
-                    dataSource: "server",
-                    billNumber: billNumber,
-                    modelName: "Gledg",
+                const vouchert = voucherType === 'ADJ' ? 'JV' : voucherType
+                const billNumber = `${vouchert}-${savedVno}`;
+                console.log('billNumber', billNumber)
+                window.DocumentPrinter.printDocument({
+                    bill_no: billNumber,
+                    model_name: "Gledg",
+                    page_type: window.companyConfigurations?.vouchers?.default_page_size || "a4",
+                    document_type: "voucher",
+                    data_source: "server",
+                    allow_multiple_print: false,
+                    copies: 1,
                 });
             }
 
-            const isModal = document.querySelector('.dv-modal-overlay');
-            closeDynamicVoucherModal();
-            if(!isModal){
-                const url = window.location.pathname
-                let not_modal = false
-                if (url.split('/').length < 4){
-                    not_modal = true
-                }
-                // Refresh parent ledger if function exists
-                if (window.refreshLedger) {
-                    window.refreshLedger();
-                } else {
-                    const url = window.location.pathname
-                    const last = url.replace(/\/\d+\/?$/, '/')
-                    window.location.href = last
-                }
-            }
+            // const isModal = document.querySelector('.dv-modal-overlay');
+            // closeDynamicVoucherModal();
+            // if(!isModal){
+            //     const url = window.location.pathname
+            //     let not_modal = false
+            //     if (url.split('/').length < 4){
+            //         not_modal = true
+            //     }
+            //     // Refresh parent ledger if function exists
+            //     if (window.refreshLedger) {
+            //         window.refreshLedger();
+            //     } else {
+            //         const url = window.location.pathname
+            //         const last = url.replace(/\/\d+\/?$/, '/')
+            //         window.location.href = last
+            //     }
+            // }
 
         }
     } catch (err) {

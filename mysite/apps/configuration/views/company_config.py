@@ -79,6 +79,11 @@ def company_config_view(request):
             'auto_convert_to_bill': request.POST.get('quotation_auto_convert_to_bill') == 'on',
         }
 
+        voucher_config = {
+            'default_page_size': request.POST.get('voucher_default_page_size') or 'thermal_80',
+            'default_direct_print_checked': request.POST.get('voucher_default_direct_print_checked') == 'on',    
+        }
+
         inventory_config = {
             'allow_negative_stock': request.POST.get('inventory_allow_negative_stock') == 'on',
             'enable_expiry_tracking': request.POST.get('inventory_enable_expiry_tracking') == 'on',
@@ -96,6 +101,7 @@ def company_config_view(request):
             'pos': pos_config,
             'purchase': purchase_config,
             'quotation': quotation_config,
+            'vouchers': voucher_config,
             'inventory': inventory_config,
             'general': general_config,
         }

@@ -107,7 +107,7 @@ def inventory_update(request):
     except ObjectDoesNotExist:
         return JsonResponse({'error': 'A user profile is required.'}, status=403)
     scope = {'company_id': profile.company_id, 'branch_id': profile.branch_id}
-    items = Inventory.objects.filter(**scope).exclude(is_deleted=True)
+    items = Inventory.objects.filter(**scope).exclude(is_deleted=True).order_by('inv_id')
     if request.method == 'POST':
         return save_changes(request, items, scope)
     if request.GET.get('data') == '1':
@@ -127,7 +127,7 @@ def inventory_update(request):
             return JsonResponse({'error': 'Invalid page.'}, status=400)
         count = items.count()
         page = min(page, max(1, (count + 99) // 100))
-        rows = items.order_by('prod_name', 'inv_id')[(page - 1) * 100:page * 100]
+        rows = items.order_by('inv_id')[(page - 1) * 100:page * 100]
         return JsonResponse({'rows': [serialize(row) for row in rows], 'count': count, 'page': page, 'page_size': 100})
     return render(request, 'reports/inventory_update.html', {
         'editor_config': {'fields': schema(scope), 'urduGlossary': glossary(), 'storageKey': f'{request.user.pk}:{profile.company_id}:{profile.branch_id}'},

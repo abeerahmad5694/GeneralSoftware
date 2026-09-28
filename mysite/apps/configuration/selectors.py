@@ -33,10 +33,17 @@ DEFAULT_CONFIG_DATA = {
         'quotation_validity_days': 30,
         'auto_convert_to_bill': True,
     },
+    'vouchers': {
+        'default_page_size': 'thermal_80',
+        # 'default_direct_print_checked': False,
+    },
     'inventory': {
         'allow_negative_stock': False,
         'enable_expiry_tracking': True,
         'enable_low_stock_alerts': True,
+    },
+    'dashboard': {
+        'default_period': 'today',
     },
     'general': {
         'multiple_bill_prints': 1,
@@ -66,8 +73,8 @@ DEFAULT_ACCOUNTS_DATA = {
     'default_bank_acc': 111000001,
     # 'petty_cash_acc': 110000002,
     
-    # 'ar_control_parent': 112,
-    # 'ap_control_parent': 231,
+    'ar_control_parent': 112,
+    'ap_control_parent': 231,
 }
 
 
