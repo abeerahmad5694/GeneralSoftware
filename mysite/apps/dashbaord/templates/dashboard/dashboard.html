@@ -6,424 +6,291 @@
 {% endblock %}
 
 {% block content %}
-<div class="dash-wrapper">
-
-    <!-- ── Top Bar ───────────────────────────────────────────────── -->
-    <div class="dash-topbar">
-        <div class="dash-topbar-left">
+<div
+    class="dash-wrapper"
+    id="dashboardRoot"
+    data-stats-url="{% url 'dashboard_stats' %}"
+    data-default-period="{{ dashboard_default_period }}"
+    data-currency-symbol="{{ currency_symbol|default:'Rs'|escape }}"
+>
+    <header class="dash-header">
+        <div class="dash-heading">
+            <span class="dash-eyebrow">BUSINESS OVERVIEW</span>
             <h1>Dashboard</h1>
-            <small id="dash-date">Loading...</small>
+            <p class="dash-date-line">
+                <span id="dash-date">{{ dashboard_company|default:'Your business' }}{% if dashboard_branch %} · {{ dashboard_branch }}{% endif %}</span>
+                <span class="dash-date-separator" aria-hidden="true">·</span>
+                <span id="dash-today">Loading today’s date…</span>
+            </p>
         </div>
-        <button class="dash-refresh-btn" id="refreshBtn" onclick="loadDashboard()">
-            <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i> Refresh
-        </button>
+
+        <div class="dash-header-controls">
+            <div class="dash-period-control" role="group" aria-label="Dashboard period">
+                <button type="button" class="dash-period-button" data-period="today" aria-pressed="{% if dashboard_default_period == 'today' %}true{% else %}false{% endif %}">Today</button>
+                <button type="button" class="dash-period-button" data-period="7_days" aria-pressed="{% if dashboard_default_period == '7_days' %}true{% else %}false{% endif %}">7 days</button>
+                <button type="button" class="dash-period-button" data-period="this_month" aria-pressed="{% if dashboard_default_period == 'this_month' %}true{% else %}false{% endif %}">This month</button>
+            </div>
+            <button type="button" class="dash-refresh-button" id="refreshDashboard" aria-label="Refresh dashboard">
+                <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                <span>Refresh</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="dash-status" id="dash-status" role="status" aria-live="polite">
+        <span class="dash-status-dot" aria-hidden="true"></span>
+        Loading your latest figures…
     </div>
 
-    <!-- Messages -->
-    {% if messages %}
-        <div class="space-y-2">
-        {% for message in messages %}
-            <div class="p-3 text-xs rounded-lg border flex items-center gap-2 {% if message.tags == 'success' %}text-emerald-700 bg-emerald-50 border-emerald-200{% else %}text-red-700 bg-red-50 border-red-200{% endif %} shadow-sm">
-                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
-                {{ message }}
-            </div>
-        {% endfor %}
+    {% if 'create_invoice' in user_perm_codes or 'create_vouchers' in user_perm_codes %}
+    <section class="dash-quick-actions" aria-label="Quick actions">
+        <div class="dash-quick-copy">
+            <span class="dash-section-kicker">QUICK ACTIONS</span>
+            <strong>Keep business moving</strong>
         </div>
+        <div class="dash-action-buttons">
+            {% if 'create_invoice' in user_perm_codes %}
+            <a class="dash-action-button dash-action-primary" href="{% url 'sale:main_sale' %}">
+                <i class="fa-solid fa-cash-register" aria-hidden="true"></i>
+                <span>Open POS</span>
+                <i class="fa-solid fa-arrow-up-right-from-square dash-action-arrow" aria-hidden="true"></i>
+            </a>
+            {% endif %}
+            {% if 'create_vouchers' in user_perm_codes %}
+            <a class="dash-action-button" href="{% url 'dynamic_voucher_page_vtype' 'CP' %}">
+                <i class="fa-solid fa-money-bill-transfer" aria-hidden="true"></i>
+                <span>Cash payment</span>
+            </a>
+            <a class="dash-action-button" href="{% url 'dynamic_voucher_page_vtype' 'BP' %}">
+                <i class="fa-solid fa-building-columns" aria-hidden="true"></i>
+                <span>Bank payment</span>
+            </a>
+            {% endif %}
+        </div>
+    </section>
     {% endif %}
 
-    
-    <!-- ── Scrollable body ──────────────────────────────────────── -->
-    <div class="dash-body">
-
-        <!-- ── KPI Row ──────────────────────────────────────────── -->
-        <div class="kpi-grid">
-
-            <!-- Sale Today -->
-            <div class="kpi-card">
-                <div class="kpi-top">
-                    <span class="kpi-label">Sale Today</span>
-                    <span class="kpi-icon sale"><i class="fa-solid fa-receipt"></i></span>
-                </div>
-                <div class="kpi-value" id="kpi-sale-today">—</div>
-                <div class="kpi-sub"><span id="kpi-sale-bills-today">—</span> bills &nbsp;|&nbsp; Month: <span id="kpi-sale-month">—</span></div>
+    <section class="dash-kpi-grid" aria-label="Business totals">
+        <article class="dash-kpi-card dash-kpi-sales">
+            <div class="dash-kpi-top">
+                <span class="dash-kpi-label">Total sales</span>
+                <span class="dash-icon-bubble"><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i></span>
             </div>
+            <strong class="dash-kpi-value" id="kpi-sales">—</strong>
+            <span class="dash-kpi-note"><span id="kpi-sales-bills">—</span> sales bills in <span class="js-period-label">this period</span></span>
+        </article>
 
-            <!-- Purchase Today -->
-            <div class="kpi-card">
-                <div class="kpi-top">
-                    <span class="kpi-label">Purchase Today</span>
-                    <span class="kpi-icon purchase"><i class="fa-solid fa-truck-ramp-box"></i></span>
-                </div>
-                <div class="kpi-value" id="kpi-pur-today">—</div>
-                <div class="kpi-sub"><span id="kpi-pur-bills-today">—</span> bills &nbsp;|&nbsp; Month: <span id="kpi-pur-month">—</span></div>
+        <article class="dash-kpi-card dash-kpi-purchases">
+            <div class="dash-kpi-top">
+                <span class="dash-kpi-label">Purchases</span>
+                <span class="dash-icon-bubble"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i></span>
             </div>
+            <strong class="dash-kpi-value" id="kpi-purchases">—</strong>
+            <span class="dash-kpi-note"><span id="kpi-purchase-bills">—</span> purchase bills · paid <span id="kpi-purchase-paid">—</span></span>
+        </article>
 
-            <!-- Total Expense (Calculated from Gledg) -->
-            <div class="kpi-card">
-                <div class="kpi-top">
-                    <span class="kpi-label">Total Expense</span>
-                    <span class="kpi-icon expense"><i class="fa-solid fa-file-invoice-dollar"></i></span>
-                </div>
-                <div class="kpi-value" id="kpi-expense-today">—</div>
-                <div class="kpi-sub"><span id="kpi-expense-count-today">0</span> entries &nbsp;|&nbsp; Month: <span id="kpi-expense-month">—</span></div>
+        <article class="dash-kpi-card dash-kpi-expenses">
+            <div class="dash-kpi-top">
+                <span class="dash-kpi-label">Ledger expenses</span>
+                <span class="dash-icon-bubble"><i class="fa-solid fa-receipt" aria-hidden="true"></i></span>
             </div>
+            <strong class="dash-kpi-value" id="kpi-expenses">—</strong>
+            <span class="dash-kpi-note"><span id="kpi-expense-entries">—</span> ledger entries in <span class="js-period-label">this period</span></span>
+        </article>
 
-            <!-- Low Stock -->
-            <div class="kpi-card">
-                <div class="kpi-top">
-                    <span class="kpi-label">Low / Out of Stock</span>
-                    <span class="kpi-icon stock"><i class="fa-solid fa-triangle-exclamation"></i></span>
-                </div>
-                <div class="kpi-value" id="kpi-low-stock">—</div>
-                <div class="kpi-sub">Items below reorder level</div>
+        <article class="dash-kpi-card dash-kpi-stock">
+            <div class="dash-kpi-top">
+                <span class="dash-kpi-label">Stock to review</span>
+                <span class="dash-icon-bubble"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
             </div>
+            <strong class="dash-kpi-value" id="kpi-low-stock">—</strong>
+            <span class="dash-kpi-note">Items at or below reorder level</span>
+        </article>
+    </section>
 
-        </div>
-
-        <!-- ── Main Row: Chart + Cash/Bank Flow & Recent Vouchers ── -->
-        <div class="dash-main-row">
-
-            <!-- 7-Day Sales vs Purchases Chart -->
-            <div class="dash-card">
-                <div class="dash-card-header">
-                    <span class="dash-card-title">Sales vs Purchases — Last 7 Days</span>
-                    <span class="dash-card-badge" id="chart-total-label">This Week</span>
-                </div>
-                <div class="dash-card-body">
-                    <div class="chart-container">
-                        <canvas id="weekChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Vouchers & Cash Flow (Today) -->
-            <div class="dash-card">
-                <div class="dash-card-header">
-                    <span class="dash-card-title">Cash & Bank Flow (Today)</span>
-                    <span class="dash-card-badge" id="recent-voucher-count">Ledger Activity</span>
-                </div>
-                <div class="dash-card-body">
-                    <!-- 4-Pill Summary of GLEDG Vouchers -->
-                    <div class="voucher-summary-grid">
-                        <div class="v-pill in">
-                            <div class="v-pill-label">Cash Received <i class="fa-solid fa-arrow-down" style="font-size:0.6rem;"></i></div>
-                            <div class="v-pill-val" id="v-cr-total">Rs 0</div>
-                        </div>
-                        <div class="v-pill out">
-                            <div class="v-pill-label">Cash Paid <i class="fa-solid fa-arrow-up" style="font-size:0.6rem;"></i></div>
-                            <div class="v-pill-val" id="v-cp-total">Rs 0</div>
-                        </div>
-                        <div class="v-pill in">
-                            <div class="v-pill-label">Bank Received <i class="fa-solid fa-arrow-down" style="font-size:0.6rem;"></i></div>
-                            <div class="v-pill-val" id="v-br-total">Rs 0</div>
-                        </div>
-                        <div class="v-pill out">
-                            <div class="v-pill-label">Bank Paid <i class="fa-solid fa-arrow-up" style="font-size:0.6rem;"></i></div>
-                            <div class="v-pill-val" id="v-bp-total">Rs 0</div>
-                        </div>
-                    </div>
-
-                    <!-- Recent Vouchers List -->
-                    <div id="recent-vouchers-list">
-                        <div class="dash-loading" style="margin-bottom:6px;"></div>
-                        <div class="dash-loading" style="margin-bottom:6px;"></div>
-                        <div class="dash-loading"></div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ── Bottom Row: Top Products + Low Stock ─────────────── -->
-        <div class="dash-bottom-row">
-
-            <!-- Top Products by Revenue (Today) -->
-            <div class="dash-card">
-                <div class="dash-card-header">
-                    <span class="dash-card-title">Top Products — Today</span>
-                    <span class="dash-card-badge">By Revenue</span>
-                </div>
-                <div class="dash-card-body">
-                    <table class="dash-table">
-                        <thead>
-                            <tr>
-                                <th style="width:20px;">#</th>
-                                <th>Product</th>
-                                <th>Qty</th>
-                                <th>Revenue</th>
-                            </tr>
-                        </thead>
-                        <tbody id="top-products-body">
-                            <tr><td colspan="4" class="dash-loading"></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Low Stock Alert -->
-            <div class="dash-card">
-                <div class="dash-card-header">
-                    <span class="dash-card-title">Stock Alerts</span>
-                    <span class="dash-card-badge" style="background:rgba(239,68,68,0.1);color:#dc2626;">Reorder Alert</span>
-                </div>
-                <div class="dash-card-body">
-                    <table class="dash-table">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Balance</th>
-                                <th>Reorder</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="low-stock-body">
-                            <tr><td colspan="4" class="dash-loading"></td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-        </div>
-
-    </div><!-- /.dash-body -->
-</div><!-- /.dash-wrapper -->
-
-<!-- Chart.js -->
-<script src="{% static 'dashboard/libs/chart.umd.min.js' %}"></script>
-
-<script>
-// ─────────────────────────────────────────────────────────────────────────
-// Dashboard — data loader & renderer
-// ─────────────────────────────────────────────────────────────────────────
-
-let weekChartInstance = null;
-
-function fmt(n) {
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-    if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
-    return Number(n || 0).toFixed(0);
-}
-
-function fmtFull(n) {
-    return Number(n || 0).toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function getPrimaryRgb() {
-    const style = getComputedStyle(document.documentElement);
-    return style.getPropertyValue('--color-primary-rgb').trim() || '37,99,235';
-}
-
-function getVar(name) {
-    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-}
-
-// ── Render recent vouchers from GLEDG ────────────────────────────────────
-function renderRecentVouchers(vouchers, summary) {
-    // 1. Update 4-pill summary
-    if (summary) {
-        document.getElementById('v-cr-total').textContent = 'Rs ' + fmt(summary.cash_received);
-        document.getElementById('v-cp-total').textContent = 'Rs ' + fmt(summary.cash_paid);
-        document.getElementById('v-br-total').textContent = 'Rs ' + fmt(summary.bank_received);
-        document.getElementById('v-bp-total').textContent = 'Rs ' + fmt(summary.bank_paid);
-    }
-
-    // 2. Render voucher list
-    const el = document.getElementById('recent-vouchers-list');
-    if (!vouchers || !vouchers.length) {
-        el.innerHTML = '<div class="dash-empty">No voucher entries today</div>';
-        return;
-    }
-
-    el.innerHTML = vouchers.map(v => {
-        const vtype = (v.v_type || 'JV').toUpperCase();
-        const vtypeClass = vtype.toLowerCase();
-        const amtSign = v.amt_type ? `(${v.amt_type})` : '';
-
-        return `
-        <div class="voucher-row">
+    <section class="dash-panel dash-profit-panel" aria-labelledby="profit-heading">
+        <div class="dash-panel-heading">
             <div>
-                <span class="vtype-badge ${vtypeClass}">${vtype}</span>
-                <span style="font-weight:700;font-size:0.7rem;color:var(--text-muted);margin-left:4px;">#${v.vno || '—'}</span>
+                <span class="dash-section-kicker">FINANCIAL REPORT</span>
+                <h2 id="profit-heading">Item-wise profit &amp; loss</h2>
             </div>
-            <div class="voucher-info">
-                <div class="voucher-desc" title="${v.desc}">${v.desc || '—'}</div>
-                <div class="voucher-meta">A/C: ${v.acc_code || '—'} &bull; ${v.time}</div>
+                <p class="dash-panel-caption">Uses the ERP’s item-cost formula; ledger expense postings are shown separately.</p>
+        </div>
+        <div class="dash-profit-grid">
+            <div class="dash-profit-metric dash-positive">
+                <span class="dash-profit-label">Profit on items</span>
+                <strong id="pnl-profit">—</strong>
+                <small><span id="pnl-profit-count">—</span> profitable items</small>
             </div>
-            <div class="voucher-amount">
-                Rs ${fmt(v.amount)} <small style="font-size:0.6rem;color:var(--text-muted);">${amtSign}</small>
+            <div class="dash-profit-metric dash-negative">
+                <span class="dash-profit-label">Loss on items</span>
+                <strong id="pnl-loss">—</strong>
+                <small><span id="pnl-loss-count">—</span> items below cost</small>
             </div>
-        </div>`;
-    }).join('');
-}
+            <div class="dash-profit-metric dash-neutral">
+                <span class="dash-profit-label">Cost to cost</span>
+                <strong id="pnl-cost-to-cost">—</strong>
+                <small><span id="pnl-cost-count">—</span> break-even items</small>
+            </div>
+        </div>
+    </section>
 
-// ── Render top products ──────────────────────────────────────────────────
-function renderTopProducts(products) {
-    const body = document.getElementById('top-products-body');
-    if (!products.length) {
-        body.innerHTML = '<tr><td colspan="4" class="dash-empty">No sales today</td></tr>';
-        return;
-    }
-    const rankClass = ['gold','silver','bronze'];
-    body.innerHTML = products.map((p, i) => `
-        <tr>
-            <td><span class="rank-badge ${rankClass[i] || ''}">${i+1}</span></td>
-            <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;" title="${p.name}">${p.name}</td>
-            <td style="color:var(--text-muted);">${fmt(p.qty)}</td>
-            <td style="font-weight:700;">Rs ${fmt(p.revenue)}</td>
-        </tr>`).join('');
-}
+    <section class="dash-primary-grid" aria-label="Sales and cash flow">
+        <article class="dash-panel dash-chart-panel">
+            <div class="dash-panel-heading">
+                <div>
+                    <span class="dash-section-kicker">PERFORMANCE</span>
+                    <h2>Sales &amp; purchases</h2>
+                </div>
+                <span class="dash-period-tag" id="chart-period-label">Selected period</span>
+            </div>
+            <div class="dash-chart-wrap">
+                <svg id="weekChart" class="dash-chart-svg" viewBox="0 0 760 250" preserveAspectRatio="none" role="img" aria-label="Sales and purchases trend for the selected period"></svg>
+                <p class="dash-chart-empty" id="chart-empty" hidden>No sales or purchases in this period.</p>
+            </div>
+            <div class="dash-chart-legend" aria-hidden="true">
+                <span><i class="dash-legend-dot dash-legend-sales"></i>Sales</span>
+                <span><i class="dash-legend-dot dash-legend-purchases"></i>Purchases</span>
+            </div>
+        </article>
 
-// ── Render low stock ─────────────────────────────────────────────────────
-function renderLowStock(items) {
-    const body = document.getElementById('low-stock-body');
-    if (!items.length) {
-        body.innerHTML = '<tr><td colspan="4" class="dash-empty" style="color:#059669;"><i class="fa-solid fa-check-circle"></i> All items above reorder level</td></tr>';
-        return;
-    }
-    body.innerHTML = items.map(it => {
-        const isOut = it.bal_qty <= 0;
-        return `
-        <tr>
-            <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;" title="${it.name}">${it.name}</td>
-            <td style="font-weight:700;${isOut ? 'color:#dc2626;' : 'color:#d97706;'}">${it.bal_qty}</td>
-            <td style="color:var(--text-muted);">${it.reorder}</td>
-            <td><span class="stock-badge ${isOut ? 'out' : 'low'}">${isOut ? 'Out' : 'Low'}</span></td>
-        </tr>`;
-    }).join('');
-}
+        <article class="dash-panel dash-cash-panel">
+            <div class="dash-panel-heading">
+                <div>
+                    <span class="dash-section-kicker">MONEY MOVEMENT</span>
+                    <h2>Cash &amp; bank</h2>
+                </div>
+                <span class="dash-period-tag" id="cash-period-label">Selected period</span>
+            </div>
+            <div class="dash-cash-grid">
+                <div class="dash-cash-item">
+                    <span class="dash-cash-label"><i class="fa-solid fa-wallet" aria-hidden="true"></i> Cash received</span>
+                    <strong id="flow-cash-received">—</strong>
+                </div>
+                <div class="dash-cash-item">
+                    <span class="dash-cash-label"><i class="fa-solid fa-wallet" aria-hidden="true"></i> Cash paid</span>
+                    <strong id="flow-cash-paid">—</strong>
+                </div>
+                <div class="dash-cash-item">
+                    <span class="dash-cash-label"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Bank received</span>
+                    <strong id="flow-bank-received">—</strong>
+                </div>
+                <div class="dash-cash-item">
+                    <span class="dash-cash-label"><i class="fa-solid fa-building-columns" aria-hidden="true"></i> Bank paid</span>
+                    <strong id="flow-bank-paid">—</strong>
+                </div>
+            </div>
+            <p class="dash-footnote">Ledger movements in the selected period, using your configured cash and bank accounts.</p>
+        </article>
+    </section>
 
-// ── Draw / update bar chart ──────────────────────────────────────────────
-function renderChart(chart) {
-    const canvas = document.getElementById('weekChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rgb = getPrimaryRgb();
-    const textMuted = getVar('--text-muted');
-    const borderColor = getVar('--border-color');
+    <section class="dash-balance-grid" aria-label="Outstanding balances">
+        <article class="dash-panel dash-balance-panel">
+            <div class="dash-panel-heading">
+                <div>
+                    <span class="dash-section-kicker">CUSTOMERS</span>
+                    <h2>Accounts receivable</h2>
+                </div>
+                <span class="dash-period-tag">Outstanding</span>
+            </div>
+            <div class="dash-balance-total">
+                <strong id="balance-receivable-total">—</strong>
+                <span><span id="balance-receivable-count">—</span> customer balances · as of today</span>
+            </div>
+            <ul class="dash-simple-list" id="receivables-list" aria-label="Largest receivable balances">
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+            </ul>
+        </article>
 
-    if (weekChartInstance) weekChartInstance.destroy();
+        <article class="dash-panel dash-balance-panel">
+            <div class="dash-panel-heading">
+                <div>
+                    <span class="dash-section-kicker">SUPPLIERS</span>
+                    <h2>Accounts payable</h2>
+                </div>
+                <span class="dash-period-tag">Outstanding</span>
+            </div>
+            <div class="dash-balance-total">
+                <strong id="balance-payable-total">—</strong>
+                <span><span id="balance-payable-count">—</span> supplier balances · as of today</span>
+            </div>
+            <ul class="dash-simple-list" id="payables-list" aria-label="Largest payable balances">
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+            </ul>
+        </article>
+    </section>
 
-    weekChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: chart.labels,
-            datasets: [
-                {
-                    label: 'Sales',
-                    data: chart.sales,
-                    backgroundColor: `rgba(${rgb}, 0.75)`,
-                    borderRadius: 5,
-                    borderSkipped: false,
-                    barPercentage: 0.55,
-                },
-                {
-                    label: 'Purchases',
-                    data: chart.purchases,
-                    backgroundColor: `rgba(16,185,129, 0.55)`,
-                    borderRadius: 5,
-                    borderSkipped: false,
-                    barPercentage: 0.55,
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: {
-                    position: 'top',
-                    align: 'end',
-                    labels: {
-                        color: textMuted,
-                        font: { size: 11, weight: '600' },
-                        boxWidth: 10,
-                        boxHeight: 10,
-                        borderRadius: 3,
-                        useBorderRadius: true,
-                        padding: 12,
-                    }
-                },
-                tooltip: {
-                    backgroundColor: getVar('--bg-surface'),
-                    titleColor: getVar('--text-main'),
-                    bodyColor: textMuted,
-                    borderColor: borderColor,
-                    borderWidth: 1,
-                    padding: 10,
-                    callbacks: {
-                        label: ctx => ` ${ctx.dataset.label}: Rs ${fmtFull(ctx.raw)}`
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { color: textMuted, font: { size: 10 } },
-                },
-                y: {
-                    grid: { color: borderColor },
-                    ticks: {
-                        color: textMuted,
-                        font: { size: 10 },
-                        callback: v => 'Rs ' + fmt(v)
-                    },
-                    border: { display: false },
-                }
-            }
-        }
-    });
-}
+    <section class="dash-lists-grid" aria-label="Products and reminders">
+        <article class="dash-panel">
+            <div class="dash-panel-heading">
+                <div>
+                    <span class="dash-section-kicker">BEST SELLERS</span>
+                    <h2>Top-selling products</h2>
+                </div>
+                <span class="dash-period-tag js-period-label">Selected period</span>
+            </div>
+            <ol class="dash-ranked-list" id="top-products-list" aria-label="Top products by sales">
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+            </ol>
+        </article>
 
-// ── Main load function ───────────────────────────────────────────────────
-async function loadDashboard() {
-    const btn = document.getElementById('refreshBtn');
-    const icon = document.getElementById('refreshIcon');
-    if (btn) btn.classList.add('spinning');
+        <article class="dash-panel">
+            <div class="dash-panel-heading">
+                <div>
+                    <span class="dash-section-kicker">PAYABLE REMINDERS</span>
+                    <h2>Payables to follow up</h2>
+                </div>
+                <span class="dash-period-tag">Outstanding</span>
+            </div>
+            <p class="dash-panel-caption dash-reminder-caption">Largest supplier balances to review. Due dates are not available in the account balance data.</p>
+            <ul class="dash-reminder-list" id="payable-reminders-list" aria-label="Supplier balances to follow up">
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+            </ul>
+        </article>
+    </section>
 
-    try {
-        const res = await fetch('{% url "dashboard_stats" %}');
-        const data = await res.json();
+    <section class="dash-lists-grid dash-last-grid" aria-label="Stock alerts and recent vouchers">
+        <article class="dash-panel">
+            <div class="dash-panel-heading">
+                <div>
+                    <span class="dash-section-kicker">INVENTORY</span>
+                    <h2>Stock alerts</h2>
+                </div>
+                <span class="dash-period-tag" id="stock-count-label">— items</span>
+            </div>
+            <ul class="dash-stock-list" id="low-stock-list" aria-label="Items at or below reorder level">
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+            </ul>
+        </article>
 
-        // Date
-        document.getElementById('dash-date').textContent = data.today;
+        <article class="dash-panel">
+            <div class="dash-panel-heading">
+                <div>
+                    <span class="dash-section-kicker">LATEST ACTIVITY</span>
+                    <h2>Recent vouchers</h2>
+                </div>
+                <span class="dash-period-tag js-period-label">Selected period</span>
+            </div>
+            <ul class="dash-voucher-list" id="recent-vouchers-list" aria-label="Recent ledger vouchers">
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+                <li class="dash-loading-row"><span class="dash-skeleton"></span><span class="dash-skeleton dash-skeleton-short"></span></li>
+            </ul>
+        </article>
+    </section>
+</div>
+{% endblock content %}
 
-        // KPIs
-        const k = data.kpi;
-        document.getElementById('kpi-sale-today').textContent       = 'Rs ' + fmt(k.sale_today);
-        document.getElementById('kpi-sale-bills-today').textContent = k.sale_bills_today;
-        document.getElementById('kpi-sale-month').textContent       = 'Rs ' + fmt(k.sale_month);
-
-        document.getElementById('kpi-pur-today').textContent        = 'Rs ' + fmt(k.pur_today);
-        document.getElementById('kpi-pur-bills-today').textContent  = k.pur_bills_today;
-        document.getElementById('kpi-pur-month').textContent        = 'Rs ' + fmt(k.pur_month);
-
-        document.getElementById('kpi-expense-today').textContent       = 'Rs ' + fmt(k.expense_today);
-        document.getElementById('kpi-expense-month').textContent       = 'Rs ' + fmt(k.expense_month);
-        document.getElementById('kpi-expense-count-today').textContent = k.expense_count_today;
-
-        document.getElementById('kpi-low-stock').textContent        = k.low_stock_count;
-
-        // Chart
-        renderChart(data.chart);
-
-        // Vouchers & Cash Flow
-        renderRecentVouchers(data.recent_vouchers, data.vouchers_today);
-
-        // Top products
-        renderTopProducts(data.top_products);
-
-        // Low stock
-        renderLowStock(data.low_stock);
-
-    } catch (e) {
-        console.error('Dashboard load failed:', e);
-    } finally {
-        if (btn) btn.classList.remove('spinning');
-    }
-}
-
-// ── Init ─────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', loadDashboard);
-</script>
+{% block extra_js %}
+<script defer src="{% static 'dashboard/dashboard.js' %}"></script>
 {% endblock %}

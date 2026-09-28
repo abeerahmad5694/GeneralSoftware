@@ -1005,6 +1005,23 @@
                     </div>
                 </div>
             </div>
+
+            <div class="config-card">
+                <h3 class="card-section-title">
+                    <i class="fas fa-gauge-high"></i> Dashboard Preferences
+                </h3>
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label for="dashboard_default_period">Default dashboard period</label>
+                        <select id="dashboard_default_period" name="dashboard_default_period" class="config-input">
+                            <option value="today" {% if config.dashboard.default_period == 'today' %}selected{% endif %}>Today</option>
+                            <option value="7_days" {% if config.dashboard.default_period == '7_days' %}selected{% endif %}>Last 7 days</option>
+                            <option value="this_month" {% if config.dashboard.default_period == 'this_month' %}selected{% endif %}>This month</option>
+                        </select>
+                        <span class="hint">Choose the period selected automatically when this company’s dashboard opens.</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Sticky Bottom Actions -->

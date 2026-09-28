@@ -97,6 +97,13 @@ def company_config_view(request):
             'online_software': request.POST.get('general_online_software') == 'on',
         }
 
+        dashboard_default_period = request.POST.get('dashboard_default_period') or 'today'
+        if dashboard_default_period not in {'today', '7_days', 'this_month'}:
+            dashboard_default_period = 'today'
+        dashboard_config = {
+            'default_period': dashboard_default_period,
+        }
+
         full_config_data = {
             'pos': pos_config,
             'purchase': purchase_config,
@@ -104,6 +111,7 @@ def company_config_view(request):
             'vouchers': voucher_config,
             'inventory': inventory_config,
             'general': general_config,
+            'dashboard': dashboard_config,
         }
 
         if not config_instance:

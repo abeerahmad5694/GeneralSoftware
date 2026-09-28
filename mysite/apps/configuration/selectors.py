@@ -50,7 +50,7 @@ DEFAULT_CONFIG_DATA = {
         'currency_symbol': 'Rs',
         'company_tagline': '',
         'online_software': True,
-    }
+    },
 }
 
 DEFAULT_ACCOUNTS_DATA = {
@@ -61,18 +61,17 @@ DEFAULT_ACCOUNTS_DATA = {
     'sales_discount_acc': 330000001,
     # 'delivery_income_acc': 412000001,
     'sales_tax_payable_acc': 234000001,
-    
+
     # 'default_supplier_acc': 231000001,
     # 'purchase_expense_acc': 311000001,
     'purchase_discount_acc': 430000001,
     'freight_payable_acc': 231000124,
     'labour_payable_acc': 231000123,
     'unload_payable_acc': 231000125,
-    
+
     'default_cash_acc': 110000001,
     'default_bank_acc': 111000001,
     # 'petty_cash_acc': 110000002,
-    
     'ar_control_parent': 112,
     'ap_control_parent': 231,
 }
@@ -80,20 +79,21 @@ DEFAULT_ACCOUNTS_DATA = {
 
 def get_company_config(company_id=None, branch_id=None):
     """
-    Ultra-fast retrieval of company configuration with merged defaults.
+    Retrieve company configuration with merged defaults without falling back
+    to another company's saved configuration.
     """
     config_obj = None
     if company_id and branch_id:
         config_obj = CompanyConfiguration.objects.filter(company_id=company_id, branch_id=branch_id).first()
-    elif branch_id:
-        config_obj = CompanyConfiguration.objects.filter(branch_id=branch_id).first()
-    elif company_id:
+    if not config_obj and company_id:
         config_obj = CompanyConfiguration.objects.filter(company_id=company_id).first()
-    
-    if not config_obj:
+    elif not config_obj and branch_id:
+        config_obj = CompanyConfiguration.objects.filter(branch_id=branch_id).first()
+
+    # Keep the legacy global fallback only for callers with no tenant context.
+    if not config_obj and company_id is None and branch_id is None:
         config_obj = CompanyConfiguration.objects.first()
 
-    # Merge with default structure
     merged = {}
     for module, defaults in DEFAULT_CONFIG_DATA.items():
         merged[module] = defaults.copy()
@@ -105,17 +105,18 @@ def get_company_config(company_id=None, branch_id=None):
 
 def get_default_accounts(company_id=None, branch_id=None):
     """
-    Ultra-fast retrieval of default chart of accounts with merged defaults.
+    Retrieve default account mappings with merged defaults, scoped by tenant.
     """
     acc_obj = None
     if company_id and branch_id:
         acc_obj = DefaultAccounts.objects.filter(company_id=company_id, branch_id=branch_id).first()
-    elif branch_id:
-        acc_obj = DefaultAccounts.objects.filter(branch_id=branch_id).first()
-    elif company_id:
+    if not acc_obj and company_id:
         acc_obj = DefaultAccounts.objects.filter(company_id=company_id).first()
+    elif not acc_obj and branch_id:
+        acc_obj = DefaultAccounts.objects.filter(branch_id=branch_id).first()
 
-    if not acc_obj:
+    # Do not borrow another company's account mapping when a tenant was supplied.
+    if not acc_obj and company_id is None and branch_id is None:
         acc_obj = DefaultAccounts.objects.first()
 
     merged = DEFAULT_ACCOUNTS_DATA.copy()
@@ -127,9 +128,7 @@ def get_default_accounts(company_id=None, branch_id=None):
 
 def get_default_account_code(key, company_id=None, branch_id=None):
     """
-    Returns a specific default account code by key (e.g. 'cash_client_acc', 'sales_discount_acc').
-    Falls back to DEFAULT_ACCOUNTS_DATA if key is missing or not configured.
+    Return a specific default account code by key, with its configured fallback.
     """
     accounts, _ = get_default_accounts(company_id=company_id, branch_id=branch_id)
     return accounts.get(key, DEFAULT_ACCOUNTS_DATA.get(key, 112000001))
-
