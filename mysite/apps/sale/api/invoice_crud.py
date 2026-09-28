@@ -311,7 +311,7 @@ def save_bill(request):
 
                 for v_type in v_types:
                     
-                    created,message = create_gledg_entries(
+                    created, message, _vno = create_gledg_entries(
                         request = request,
                         lines=lines,
                         # lines=lines if v_type != 'CP' else return_lines,

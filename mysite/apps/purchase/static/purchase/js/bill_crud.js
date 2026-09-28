@@ -157,6 +157,7 @@ async function save_bill(event) {
   // console.log(payload);
   
   // console.log('kdsjkjklj')
+  const purPageSize = window.companyConfigurations?.purchase?.default_page_size || "thermal_80";
   try {
     const isOnlineSoftware = window.companyConfigurations?.general?.online_software !== false;
     if (!isOnlineSoftware || navigator.onLine) {
@@ -174,13 +175,14 @@ async function save_bill(event) {
       lastBillAmount.textContent = `Last Bill Amount = ${payload.header_net_total}`;
 
 
-      const purPageSize = window.companyConfigurations?.purchase?.default_page_size || "thermal_80";
+      
+      console.log(purPageSize);
       const copies = window.companyConfigurations?.general?.multiple_bill_prints || 1;
-      // console.log('copies', copies)
+      console.log('copies', copies)
       window.DocumentPrinter.printDocument({
         bill_no: data.bill_no,
         model_name: 'Purchase',
-        page_type: purPageSize,
+        page_type: purPageSize.toLowerCase(),
         document_type: "purchase_invoice",
         data_source: "server",           // "local" | "server"
         payload: payload,                 // required when data_source === "local"
@@ -191,13 +193,14 @@ async function save_bill(event) {
 
     } else {
 
-      const purPageSize = window.companyConfigurations?.purchase?.default_page_size || "thermal_80";
+      //const purPageSize = window.companyConfigurations?.purchase?.default_page_size || "thermal_80";
+      console.log(purPageSize);
       const copies = window.companyConfigurations?.general?.copies || 1;
 
       window.DocumentPrinter.printDocument({
         bill_no: null,
         model_name: 'Purchase',
-        page_type: purPageSize,
+        page_type: purPageSize.toLowerCase(),
         document_type: "purchase_invoice",
         data_source: "local",           // "local" | "server"
         payload: payload,                 // required when data_source === "local"

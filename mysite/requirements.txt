@@ -18,3 +18,5 @@ arabic-reshaper
 python-bidi
 cryptography
 pycryptodome
+requests
+

@@ -1,9 +1,13 @@
+# pyrefly: ignore [missing-import]
 from apps.myledger.services.voucher_utills import create_gledg_entries , delete_gledg_entries ,get_gledg_entries
+# pyrefly: ignore [missing-import]
 from apps.myledger.services.dto import GledgLineDTO
 from django.http import JsonResponse
 from decimal import Decimal
+# pyrefly: ignore [missing-import]
 from apps.myledger.selectors.db_queries import get_all_bank_accounts
 import json
+# pyrefly: ignore [missing-import]
 from apps.myledger.services.helpers import get_user_perms
 
 
@@ -88,7 +92,7 @@ def save_dynamic_voucher(request):
         if not update and not can_create_voucher:
             return JsonResponse({'success': False, 'message': create_voucher_message}, status=200)
 
-        created,message = create_gledg_entries(
+        created, message, saved_vno = create_gledg_entries(
             request = request,
             lines=lines,
             date=date,
@@ -100,12 +104,12 @@ def save_dynamic_voucher(request):
             inv_id='0',
             transaction_type=transaction_type,
         )
-        # print('messageae',message,created)
         if created:
             print('message',message)
             return JsonResponse({
                 'success': True,
                 'message': message,
+                'vno': saved_vno,
             })
         return JsonResponse({'success': False, 'message': message}, status=200)
         

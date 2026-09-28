@@ -36,7 +36,7 @@ from copy import deepcopy
 from django.core.cache import cache
 from django.template.loader import render_to_string
 
-from ..schema import (
+from apps.invoice_designer.schema import (
     FIELD_REGISTRY,
     ITEM_COLUMN_REGISTRY,
     TOTALS_REGISTRY,
@@ -196,6 +196,17 @@ class DocumentRenderer:
     def _resolve_field_section(self, section_key: str, section_config: dict, document_data: dict) -> list:
         """[{field, visible, style_css, value, type, label}] for one section."""
         resolved = []
+        
+        # Check if customer section should be excluded based on exclude_accounts
+        if section_key == "customer" and section_config.get("exclude_accounts"):
+            excluded = [acc.strip().lower() for acc in section_config["exclude_accounts"].split(",") if acc.strip()]
+            if excluded:
+                customer_data = document_data.get("customer", {})
+                c_name = str(customer_data.get("name", "")).strip().lower()
+                c_code = str(customer_data.get("account_code", "")).strip().lower()
+                if c_name in excluded or c_code in excluded:
+                    return []
+
         for field_config in section_config.get("fields", []):
             field_key = field_config.get("field")
             if not field_config.get("visible", True):
@@ -306,12 +317,15 @@ class DocumentRenderer:
                 fmt = column.get("format_string")
                 if fmt:
                     try:
-                        cell = fmt.format_map(fmt_ctx)
+                        cell_val = fmt.format_map(fmt_ctx)
                     except (KeyError, ValueError):
-                        cell = row_dict.get(column["field"], "")
+                        cell_val = row_dict.get(column["field"], "")
                 else:
-                    cell = row_dict.get(column["field"], "")
-                cells.append(cell)
+                    cell_val = row_dict.get(column["field"], "")
+                cells.append({
+                    "value": cell_val,
+                    "style_css": column.get("style_css", "")
+                })
             result.append(cells)
         return result
 
@@ -429,7 +443,7 @@ class DocumentRenderer:
             cells_with_meta = []
             for c_idx, cell in enumerate(plain_cells):
                 field_id = visible_columns[c_idx]["field"] if c_idx < len(visible_columns) else ""
-                cells_with_meta.append({"value": cell, "field": field_id})
+                cells_with_meta.append({"value": cell["value"], "field": field_id, "style_css": cell["style_css"]})
 
             rows_with_urdu.append({
                 "cells": cells_with_meta,
@@ -441,6 +455,7 @@ class DocumentRenderer:
             "columns": visible_columns,
             "rows": plain_rows,
             "rows_with_urdu": rows_with_urdu,
+            "table_borders": sections["items"].get("table_borders", False),
         }
 
         context["totals_section"] = {

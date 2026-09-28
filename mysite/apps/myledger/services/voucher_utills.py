@@ -272,7 +272,7 @@ def create_gledg_entries(
 
         Gledg.objects.bulk_create(entries)
 
-    return True , f'Saved Successfully! Voucher No: {vno}' , 
+    return True , f'Saved Successfully! Voucher No: {vno}', vno
 
 
 

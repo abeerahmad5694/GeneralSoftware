@@ -24,9 +24,36 @@ never real columns on these models).
 
 from datetime import datetime
 
-from .ledger import get_previous_balance as _ledger_previous_balance
+from apps.invoice_designer.services.ledger import get_previous_balance as _ledger_previous_balance
 
 PACKING_MODE_LABELS = {1: "Base", 2: "Carton", 3: "Dozen", 4: "Wholesale"}
+
+
+def _fetch_account_info(acc_code) -> dict:
+    """
+    Ultra-fast single-field lookup from the Accounts table.
+    Uses .only() so the DB only reads 4 columns, and the PK filter
+    is always an indexed integer = O(log n) at worst.
+    Returns a dict with name/address/phone keys (empty strings on miss).
+    """
+    if not acc_code:
+        return {"name": "", "address": "", "phone": ""}
+    try:
+        from apps.myaccounts.models import Accounts
+        acc = Accounts.objects.only(
+            "ACC_CODE", "ACC_NAME", "ADDRESS", "MOBILE_NO", "PHONE_OFF"
+        ).filter(ACC_CODE=acc_code).first()
+        if acc:
+            phone = getattr(acc, "MOBILE_NO", "") or getattr(acc, "PHONE_OFF", "") or ""
+            return {
+                "account_code": acc_code,
+                "name": getattr(acc, "ACC_NAME", "") or "",
+                "address": getattr(acc, "ADDRESS", "") or "",
+                "phone": phone,
+            }
+    except Exception:
+        pass
+    return {"account_code": acc_code, "name": "", "address": "", "phone": ""}
 
 
 def _get(row, field_name, default=None):
@@ -123,7 +150,7 @@ def build_pos_invoice_data(header_row, include_previous_balance: bool = False) -
 
         "company": company_data,
         "branch": branch_data,
-        "customer": {"account_code": acc_code},
+        "customer": _fetch_account_info(acc_code),
 
         "totals": {
             "total_items": _get(header_row, "header_total_items", 0),
@@ -243,7 +270,7 @@ def build_purchase_invoice_data(header_row, include_previous_balance: bool = Fal
 
         "company": company_data,
         "branch": branch_data,
-        "customer": {"account_code": acc_code},
+        "customer": _fetch_account_info(acc_code),
 
         "totals": {
             "total_items": _get(header_row, "header_total_items", 0),
@@ -343,7 +370,7 @@ def build_quotation_data(header_row, include_previous_balance: bool = False) -> 
 
         "company": company_data,
         "branch": branch_data,
-        "customer": {"account_code": acc_code},
+        "customer": _fetch_account_info(acc_code),
 
         "totals": {
             "total_items": _get(header_row, "header_total_items", 0),
@@ -382,6 +409,100 @@ def build_quotation_data(header_row, include_previous_balance: bool = False) -> 
     return data
 
 
+def build_voucher_data(header_row, include_previous_balance: bool = False) -> dict:
+    """
+    Builds data for a generic Voucher (from Gledg rows).
+    Since vouchers don't have a distinct 'header' table, header_row is just
+    one of the Gledg rows (or a list of rows). We fetch all rows for the same
+    V_TYPE and VNO to build the full voucher.
+    """
+    # Handle if a list of rows was passed instead of a single instance
+    if isinstance(header_row, list) and header_row:
+        rows = header_row
+        header_row = rows[0]
+    else:
+        v_type = _get(header_row, "V_TYPE")
+        vno = _get(header_row, "VNO")
+        if v_type and vno:
+            rows = list(header_row.__class__.objects.filter(V_TYPE=v_type, VNO=vno).order_by("GLEDG_ID"))
+        else:
+            rows = [header_row] if header_row else []
+
+    company_data, branch_data = _company_and_branch_data(_get(header_row, "COMPANY"), _get(header_row, "BRANCH"))
+    
+    # We map V_TYPE to a readable title if possible
+    v_type_mapping = {
+        "CR": "CASH RECEIPT VOUCHER",
+        "CP": "CASH PAYMENT VOUCHER",
+        "BR": "BANK RECEIPT VOUCHER",
+        "BP": "BANK PAYMENT VOUCHER",
+        "JV": "JOURNAL VOUCHER",
+    }
+    v_type = _get(header_row, "V_TYPE", "")
+    title = v_type_mapping.get(v_type, f"VOUCHER {v_type}")
+
+    total_debit = sum(_number(_get(r, "AMOUNT")) for r in rows if _get(r, "AMT_TYPE") == "D")
+    total_credit = sum(_number(_get(r, "AMOUNT")) for r in rows if _get(r, "AMT_TYPE") == "C")
+
+    # In vouchers, we often don't have a single "customer". 
+    # But we can try to find the main account being affected (e.g., if there's only one debit or credit).
+    # For now, we leave it empty or map it to the header_row's account.
+    customer_info = _fetch_account_info(_get(header_row, "ACC_CODE"))
+
+    data = {
+        "bill_number": f"{v_type}-{_get(header_row, 'VNO')}",
+        "invoice_title": title,
+        "invoice_date": _get(header_row, "DATE") or _get(header_row, "DATEENT"),
+        "salesman": "",
+        "cashier": _get(header_row, "USER", ""),
+        "terminal": getattr(_get(header_row, "POSTERMINAL"), "name", "") if _get(header_row, "POSTERMINAL") else "",
+        "remarks": _get(header_row, "REMARKS", ""),
+        "printed_by": _get(header_row, "USER", ""),
+        "print_date": datetime.now().strftime("%Y-%m-%d"),
+        "print_time": datetime.now().strftime("%H:%M:%S"),
+
+        "company": company_data,
+        "branch": branch_data,
+        "customer": customer_info,
+
+        "totals": {
+            "total_items": len(rows),
+            "subtotal": 0,
+            "discount_percent": 0,
+            "discount_amount": 0,
+            "delivery_charges": 0,
+            "gst_percent": 0,
+            "gst_amount": 0,
+            "misc_charges": 0,
+            "net_total": total_debit, # Often debit == credit
+            "cash_received": 0,
+            "bank_received": 0,
+            "change_amount": 0,
+        },
+        "items": [],
+    }
+
+    for row in rows:
+        acc_info = _fetch_account_info(_get(row, "ACC_CODE"))
+        ref_acc_info = _fetch_account_info(_get(row, "REF_ACC_CODE"))
+        
+        is_debit = _get(row, "AMT_TYPE") == "D"
+        amt = _number(_get(row, "AMOUNT"))
+        
+        data["items"].append({
+            "account_code": acc_info.get("account_code", ""),
+            "account_name": acc_info.get("name", ""),
+            "counter_account_code": ref_acc_info.get("account_code", ""),
+            "counter_account_name": ref_acc_info.get("name", ""),
+            "description": _get(row, "DESCRIPTION", ""),
+            "debit_amount": amt if is_debit else 0,
+            "credit_amount": amt if not is_debit else 0,
+            "amount": amt,
+        })
+
+    return data
+
+
 # Document type -> builder function. RenderDocumentView/DocumentDataView
 # use this map so adding a new document type never means touching the
 # view or the renderer.
@@ -390,5 +511,5 @@ DOCUMENT_DATA_BUILDERS = {
     "credit_sale_invoice": build_pos_invoice_data,   # same real columns as POS today
     "purchase_invoice": build_purchase_invoice_data,
     "quotation": build_quotation_data,
-    # "voucher": build_voucher_data,
+    "voucher": build_voucher_data,
 }

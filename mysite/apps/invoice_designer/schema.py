@@ -244,28 +244,26 @@ FIELD_REGISTRY = {
         "default_visible": False, "default_style": "small",
     },
 
-    # --- Customer Fields — no Customer model exists in this project.
-    # customer_account is real (Invoice.header_acc_code). The rest are
-    # deliberately manual-entry (data_source: None) so nothing here
-    # ever invents a database value that isn't there.
+    # --- Customer Fields — sourced from Accounts table via _fetch_account_info().
+    # ACC_CODE (PK) -> ACC_NAME, ADDRESS, MOBILE_NO. Single .only() query per render.
     "customer_account": {
         "label": "Customer Account Code", "category": "Customer Fields",
         "data_source": "customer.account_code", "field_type": "text",
         "default_visible": False, "default_style": "small",
     },
     "customer_name": {
-        "label": "Customer Name (typed)", "category": "Customer Fields",
-        "data_source": None, "field_type": "text",
+        "label": "Customer Name", "category": "Customer Fields",
+        "data_source": "customer.name", "field_type": "text",
         "default_visible": True, "default_style": "normal",
     },
     "customer_address": {
-        "label": "Customer Address (typed)", "category": "Customer Fields",
-        "data_source": None, "field_type": "text",
+        "label": "Customer Address", "category": "Customer Fields",
+        "data_source": "customer.address", "field_type": "text",
         "default_visible": False, "default_style": "small",
     },
     "customer_phone": {
-        "label": "Customer Phone (typed)", "category": "Customer Fields",
-        "data_source": None, "field_type": "text",
+        "label": "Customer Phone", "category": "Customer Fields",
+        "data_source": "customer.phone", "field_type": "text",
         "default_visible": False, "default_style": "small",
     },
 
@@ -393,18 +391,30 @@ _PURCHASE_ONLY_ITEM_COLUMNS = {
     "landed_cost":           {"label": "Landed Cost/Unit","format_key": "LandedCost", "category": "Pricing",  "default_visible": False, "default_width": "10%"},
 }
 
+_VOUCHER_ITEM_COLUMNS = {
+    "account_code": {"label": "Account Code", "format_key": "AccCode", "category": "Account", "default_visible": False, "default_width": "15%"},
+    "account_name": {"label": "Account Name", "format_key": "AccName", "category": "Account", "default_visible": True, "default_width": "30%"},
+    "counter_account_code": {"label": "Counter Acc Code", "format_key": "CAccCode", "category": "Account", "default_visible": False, "default_width": "15%"},
+    "counter_account_name": {"label": "Counter Acc Name", "format_key": "CAccName", "category": "Account", "default_visible": False, "default_width": "30%"},
+    "description": {"label": "Description", "format_key": "Desc", "category": "Description", "default_visible": True, "default_width": "30%"},
+    "debit_amount": {"label": "Debit", "format_key": "Debit", "category": "Amount", "default_visible": True, "default_width": "15%"},
+    "credit_amount": {"label": "Credit", "format_key": "Credit", "category": "Amount", "default_visible": True, "default_width": "15%"},
+}
+
 ITEM_COLUMN_REGISTRIES = {
     "pos_invoice": {**_SHARED_ITEM_COLUMNS, **_SALE_ONLY_ITEM_COLUMNS},
     "credit_sale_invoice": {**_SHARED_ITEM_COLUMNS, **_SALE_ONLY_ITEM_COLUMNS},
     "purchase_invoice": {**_SHARED_ITEM_COLUMNS, **_PURCHASE_ONLY_ITEM_COLUMNS},
     "quotation": {**_SHARED_ITEM_COLUMNS, **_SALE_ONLY_ITEM_COLUMNS},
+    "voucher": _VOUCHER_ITEM_COLUMNS,
 }
 # Renderer-side fallback lookup (label/width when a saved column config
 # predates a registry change) — the union of every real column, so any
 # document_type's saved config still resolves.
-ITEM_COLUMN_REGISTRY = {**_SHARED_ITEM_COLUMNS, **_SALE_ONLY_ITEM_COLUMNS, **_PURCHASE_ONLY_ITEM_COLUMNS}
+ITEM_COLUMN_REGISTRY = {**_SHARED_ITEM_COLUMNS, **_SALE_ONLY_ITEM_COLUMNS, **_PURCHASE_ONLY_ITEM_COLUMNS, **_VOUCHER_ITEM_COLUMNS}
 
 DEFAULT_ITEM_COLUMN_KEYS = ["product_name", "quantity", "rate", "amount"]
+DEFAULT_VOUCHER_COLUMN_KEYS = ["account_name", "description", "debit_amount", "credit_amount"]
 
 
 def get_item_column_registry(document_type: str) -> dict:
@@ -479,14 +489,17 @@ def _default_footer_fields():
 def _default_item_columns(document_type: str):
     registry = get_item_column_registry(document_type)
     columns = []
+    
+    default_keys = DEFAULT_VOUCHER_COLUMN_KEYS if document_type == "voucher" else DEFAULT_ITEM_COLUMN_KEYS
+    
     for order, key in enumerate(registry.keys(), start=1):
         entry = registry[key]
-        is_default = key in DEFAULT_ITEM_COLUMN_KEYS
+        is_default = key in default_keys
         columns.append({
             "field": key,
             "label": entry["label"],
             "visible": is_default,
-            "order": DEFAULT_ITEM_COLUMN_KEYS.index(key) + 1 if is_default else order + len(DEFAULT_ITEM_COLUMN_KEYS),
+            "order": default_keys.index(key) + 1 if is_default else order + len(default_keys),
             "width": entry["default_width"],
             "style": "normal",
             "format_string": "",      # e.g. "{product_name} ({discount_percent}%)"
@@ -613,7 +626,7 @@ def default_configuration_for(document_type: str, page_type: str) -> dict:
         "styles": {"default_font_family": default_font, "default_font_size": default_size},
         "sections": {
             "header": {"visible": True, "fields": _default_header_fields()},
-            "customer": {"visible": True, "fields": _default_customer_fields()},
+            "customer": {"visible": True, "fields": _default_customer_fields(), "exclude_accounts": ""},
             "items": {"visible": True, "columns": _default_item_columns(document_type)},
             "totals": {"visible": True, "fields": _default_totals_fields()},
             "footer": {"visible": True, "fields": _default_footer_fields()},

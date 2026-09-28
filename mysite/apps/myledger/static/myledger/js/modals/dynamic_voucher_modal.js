@@ -357,6 +357,19 @@ async function saveUpdateDynamicVoucher() {
         const response = await myLedgerHelpers.saveUpdateDynamicVoucher(payload);
         alert(response.message);
         if (response.success) {
+            // Print/Preview the voucher after save
+            const savedVno = response.vno || vno;
+            if (savedVno && savedVno !== "0" && window.DocumentPrinter) {
+                const billNumber = `${voucherType}-${savedVno}`;
+                window.DocumentPrinter.openPreviewModal({
+                    documentType: "voucher",
+                    pageType: "a4",
+                    dataSource: "server",
+                    billNumber: billNumber,
+                    modelName: "Gledg",
+                });
+            }
+
             const isModal = document.querySelector('.dv-modal-overlay');
             closeDynamicVoucherModal();
             if(!isModal){

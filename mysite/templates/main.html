@@ -90,8 +90,18 @@
                     </button>
                     <div class="submenu">
                         <a href="{% url 'inventory' %}">Inventory / Item List</a>
+                        
+                        {% if 'view_stock_report' in user_perm_codes %}
+                        <a href="{% url 'item_ledger' %}">Item Ledger</a> 
+                        {% endif %}
+
+                        {% if 'view_stock_report' in user_perm_codes %}
                         <a href="{% url 'stock_report' %}">Stock Report</a>
-                        <a href="{% url 'item_ledger' %}">Item Ledger</a>
+                        {% endif %}
+                        
+                        {% if 'edit_item' in user_perm_codes %}
+                        <a href="{% url 'inventory_update' %}">Bulk Inventory Update</a>
+                        {% endif %}
                         <!-- <a href="#">Warehouse</a>
                         <a href="#">Transfers</a> -->
                     </div>
@@ -152,12 +162,14 @@
 
 
                 <!-- HR -->
+                {% if 'view_daybook' in user_perm_codes or 'see_reports' in user_perm_codes or 'view_own_sales' in user_perm_codes %}
                 <div class="sb-section-label sb-label">Reports</div>
 
                 <a href="{% url 'daybook' %}" class="nav-item" data-tip="Daybook">
                     <span class="nav-icon"><i class="fa-solid fa-chart-pie"></i></span>
                     <span class="sb-label ml-2.5">Daybook</span>
                 </a>
+                {% endif %}
 
                 {% if 'see_reports' in user_perm_codes %}
                 <div class="sub-parent">
@@ -207,7 +219,9 @@
                     <span class="sb-label ml-2.5">Accounts Payable</span>
                 </a> -->
 
+                {% if 'view_ledger' in user_perm_codes or 'create_vouchers' in user_perm_codes or 'create_accounts' in user_perm_codes or 'edit_accounts' in user_perm_codes %}
                 <div class="sb-section-label sb-label">Finance</div>
+                {% endif %}
 
                 {% if 'view_ledger' in user_perm_codes %}
                 <a href="{% url 'general_ledger' %}" class="nav-item" data-tip="General Ledger">
@@ -262,7 +276,9 @@
 
 
 
+                {% if 'manage_users' in user_perm_codes or 'configure_system' in user_perm_codes %}
                 <div class="sb-section-label sb-label">System</div>
+                {% endif %}
                 <!-- 
                 <a href="#" class="nav-item" data-tip="Settings">
                     <span class="nav-icon"><i class="fa-solid fa-gear"></i></span>

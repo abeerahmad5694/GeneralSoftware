@@ -125,29 +125,36 @@ async function saveJvVoucher() {
 
         // console.log("Saving JV Voucher Payload:", payload);
         const response = await myLedgerHelpers.saveUpdateDynamicVoucher(payload);
-        
+        console.log('response',response)
         if (response.success) {
             alert(response.message || 'Voucher saved successfully!');
-            const isModal = document.querySelector('.jvm-modal-overlay');
-            // console.log(isModal, '----------------')
-            // return;
-            closeJvVoucherModal();
-            if(!isModal){
-                const url = window.location.pathname
-                const last = url.replace(/\/\d+\/?$/, '/')
-                window.location.href = last
-                // const url = window.location.pathname
-                // let not_modal = false
-                // if (url.split('/').length < 4){
-                //     not_modal = true
-                // }
-                // // Refresh parent ledger if function exists
-                // if (window.refreshLedger) {
-                //     window.refreshLedger();
-                // } else {
-                    
-                // }
+            
+            // Print/Preview the JV voucher after save
+            const savedVno = response.vno || vno;
+            console.log('savevno',savedVno)
+            if (savedVno) {
+                console.log('skfjsdkfjslkdfjlsdkfjlskdfjlsdjfldj')
+                console.log('window.DocumentPrinter',window.DocumentPrinter)
+                window.DocumentPrinter.printDocument({
+                    bill_no: 135,
+                    model_name: "Voucher",
+                    page_type: "a4",
+                    document_type: "voucher",
+                    data_source: "server",
+                    allow_multiple_print: false,
+                    copies: 1,
+                });
+
+
             }
+
+            const isModal = document.querySelector('.jvm-modal-overlay');
+            closeJvVoucherModal();
+            // if(!isModal){
+            //     const url = window.location.pathname
+            //     const last = url.replace(/\/\d+\/?$/, '/')
+            //     window.location.href = last
+            // }
         } else {
             alert(response.error || 'Failed to save voucher.');
         }

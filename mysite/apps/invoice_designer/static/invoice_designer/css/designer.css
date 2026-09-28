@@ -41,12 +41,30 @@ body {
     height: 100vh;
 }
 
+@media (max-width: 900px) {
+    .studio {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    .rail-left, .rail-right {
+        width: 100%;
+        min-height: 300px;
+        flex-shrink: 0;
+    }
+    .canvas-wrap {
+        min-height: 50vh;
+    }
+}
+
 .studio-topbar {
     grid-column: 1 / -1;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 18px;
-    padding: 0 20px;
+    padding: 10px 20px;
     background: var(--rail);
     color: var(--rail-ink);
     border-bottom: 1px solid #000;
@@ -361,6 +379,10 @@ body {
 
 .doc-item-table { width: 100%; border-collapse: collapse; font-size: inherit; }
 .doc-item-table th, .doc-item-table td { border-bottom: 1px solid #eee; padding: 4px 6px; text-align: left; }
+.doc-item-table tbody td { cursor: pointer; }
+.doc-item-table tbody td:hover { outline: 1px dashed var(--accent); outline-offset: -1px; }
+.doc-item-table tbody td.selected { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--accent-soft); }
+.doc-item-table.has-borders th, .doc-item-table.has-borders td { border: 1px solid #333; }
 .doc-total-row { display: flex; justify-content: space-between; }
 .doc-empty-row { text-align: center; color: #999; padding: 10px 0; }
 
@@ -549,7 +571,6 @@ body {
 .urdu-font {
     font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Aleem Nastaleeq', serif !important;
     direction: rtl;
-    unicode-bidi: bidi-override;
     text-align: right;
     line-height: 2;          /* Nastaleeq ascenders/descenders need extra line height */
     letter-spacing: 0;
@@ -565,15 +586,11 @@ body {
 .urdu-section {
     direction: rtl;
     text-align: right;
-    border-top: 1px dashed #ccc;
-    padding-top: 4px;
-    margin-top: 4px;
 }
 
 /* Urdu totals row — value on left (numerals stay LTR), label on right */
 .urdu-total-row {
     display: flex;
-    flex-direction: row-reverse;
     justify-content: space-between;
     direction: rtl;
 }
@@ -608,15 +625,7 @@ body {
     unicode-bidi: isolate;
 }
 
-/* Designer canvas: highlight urdu sections with a subtle RTL indicator */
-.studio .urdu-section::before {
-    content: 'اردو';
-    font-family: 'Jameel Noori Nastaleeq', serif;
-    font-size: 8px;
-    color: #8890a0;
-    float: left;
-    margin-right: 4px;
-}
+/* Designer canvas: removed visual indicator as per user request */
 
 /* Print: ensure Nastaleeq font is embedded and Urdu sections render correctly */
 @media print {
@@ -628,6 +637,5 @@ body {
     }
     .urdu-total-row {
         display: flex !important;
-        flex-direction: row-reverse !important;
     }
 }

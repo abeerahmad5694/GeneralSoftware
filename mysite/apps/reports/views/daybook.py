@@ -530,9 +530,14 @@ def daybook_calc_opening_closing(request):
     })
 
 def daybook(request):
-    can_view, message = get_user_perms(request, 'see_reports')
-    if not can_view:
+    can_view_reports, _ = get_user_perms(request, 'see_reports')
+    can_view_daybook, _ = get_user_perms(request, 'view_daybook')
+    can_view_own_sales, _ = get_user_perms(request, 'view_own_sales')
+    
+    if not (can_view_reports or can_view_daybook or can_view_own_sales):
         return redirect('page_not_found')
+        
+    full_daybook_access = can_view_reports or can_view_daybook
 
     # =========================================================
     # FEATURES
@@ -667,6 +672,11 @@ def daybook(request):
     # =========================================================
     # VOUCHER TYPE FILTER
     # =========================================================
+
+    if not full_daybook_access:
+        invoice_qs = invoice_qs.filter(user=request.user.username)
+        purchase_qs = purchase_qs.none()
+        gledg_qs = gledg_qs.none()
 
     if v_type:
 

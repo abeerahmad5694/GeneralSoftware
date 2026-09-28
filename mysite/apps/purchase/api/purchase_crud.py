@@ -218,7 +218,7 @@ def save_bill(request):
                 if not old_gledg:
                     return JsonResponse({"success": False, "message": "Purchase invoice does not exists in ledger"})
             
-            created,message = create_gledg_entries(
+            created, message, _vno = create_gledg_entries(
                 request = request,
                 lines=lines,
                 date=fields_will_update.get('dateent'),

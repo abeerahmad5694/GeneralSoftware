@@ -257,10 +257,12 @@ class DocumentDataView(View):
             from apps.sale.models import Invoice
             from apps.purchase.models import Purchase
             from apps.quotation.models import Quotation
+            from apps.myledger.models import Gledg
             cls.MODEL_BY_NAME = {
                 "Invoice": Invoice,
                 "Purchase": Purchase,
                 "Quotation": Quotation,
+                "Gledg": Gledg,
             }
         return cls.MODEL_BY_NAME
 
@@ -271,8 +273,28 @@ class DocumentDataView(View):
         items in the SAME table (see services/data_builders.py) so this
         is always a `filter(bill_no=..., is_header=True).first()` call,
         never a plain `.get(pk=...)`.
+
+        For voucher document type, bill_number is in the format "CR-123"
+        (v_type-vno) and we return a list of Gledg rows.
         """
         model_map = self._get_model_map()
+
+        if document_type == "voucher":
+            # bill_number expected as "CR-123" or just "123" with model_name as v_type
+            from apps.myledger.models import Gledg
+            if "-" in str(bill_number):
+                v_type, vno = str(bill_number).rsplit("-", 1)
+            else:
+                v_type = model_name or "CR"
+                vno = bill_number
+            try:
+                rows = list(Gledg.objects.filter(
+                    V_TYPE=v_type.strip(), VNO=int(vno)
+                ).select_related("COMPANY", "BRANCH").order_by("GLEDG_ID"))
+                return rows if rows else None
+            except Exception:
+                return None
+
         if not model_name:
             doc_type_to_model = {
                 "pos_invoice": "Invoice",

@@ -103,7 +103,7 @@ async function save_bill(e, also_convert_into_bill = false) {
     mapPaymentMode,
   });
 
-  console.log("payload===============", payload);
+  // console.log("payload===============", payload);
 
   // window.DocumentPrinter.printDocument({
   //   bill_no: null,
@@ -120,6 +120,7 @@ async function save_bill(e, also_convert_into_bill = false) {
   //   "after DocumentPrinter", payload,
   // )
   // return
+  const purPageSize = window.companyConfigurations?.quotation?.default_page_size || "thermal_80"; 
 
   try {
     const isOnlineSoftware = window.companyConfigurations?.general?.online_software !== false;
@@ -144,7 +145,7 @@ async function save_bill(e, also_convert_into_bill = false) {
       }
 
 
-
+      
       lastBillAmount.textContent = `Last Bill Amount = ${payload.header_net_total.toFixed(3)}`;
       // lastBillAmount.textContent = `Last Bill Amount = 0000.00`;
 
@@ -152,7 +153,7 @@ async function save_bill(e, also_convert_into_bill = false) {
         await window.DocumentPrinter.printDocument({
           bill_no: data.header_voucher_no,
           model_name: 'Quotation',
-          page_type: "thermal_80",
+          page_type: purPageSize.toLowerCase(),
           document_type: "quotation",
           data_source: "server",           // "local" | "server"
           payload: null,                 // required when data_source === "local"
@@ -163,11 +164,12 @@ async function save_bill(e, also_convert_into_bill = false) {
       } catch (e) {
 
         // showToast('We are facing some issue while printing reciept.',e)
+        //const purPageSize = window.companyConfigurations?.quotation?.default_page_size || "thermal_80";
         offline_bill_no += 1;
         await window.DocumentPrinter.printDocument({
           bill_no: offline_bill_no,
           model_name: 'Quotation',
-          page_type: "thermal_80",
+          page_type: purPageSize.toLowerCase(),
           document_type: "quotation",
           data_source: "local",           // "local" | "server"
           payload: payload,                 // required when data_source === "local"
@@ -193,6 +195,7 @@ async function save_bill(e, also_convert_into_bill = false) {
       });
       throw new Error("Offline mode");
     }
+    
   } catch (err) {
     showToast("Save failed or offline", err);
     await saveBillOffline(payload);
