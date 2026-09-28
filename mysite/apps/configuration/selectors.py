@@ -43,6 +43,9 @@ DEFAULT_CONFIG_DATA = {
         'currency_symbol': 'Rs',
         'company_tagline': '',
         'online_software': True,
+    },
+    'dashboard': {
+        'default_period': 'today',
     }
 }
 
@@ -65,9 +68,8 @@ DEFAULT_ACCOUNTS_DATA = {
     'default_cash_acc': 110000001,
     'default_bank_acc': 111000001,
     # 'petty_cash_acc': 110000002,
-    
-    # 'ar_control_parent': 112,
-    # 'ap_control_parent': 231,
+    'ar_control_parent': 112,
+    'ap_control_parent': 231,
 }
 
 
@@ -78,12 +80,14 @@ def get_company_config(company_id=None, branch_id=None):
     config_obj = None
     if company_id and branch_id:
         config_obj = CompanyConfiguration.objects.filter(company_id=company_id, branch_id=branch_id).first()
-    elif branch_id:
-        config_obj = CompanyConfiguration.objects.filter(branch_id=branch_id).first()
-    elif company_id:
+    if not config_obj and company_id:
         config_obj = CompanyConfiguration.objects.filter(company_id=company_id).first()
-    
-    if not config_obj:
+    elif not config_obj and branch_id:
+        config_obj = CompanyConfiguration.objects.filter(branch_id=branch_id).first()
+
+    # Only use the legacy global fallback when no tenant was supplied. A
+    # company/branch must never inherit another tenant's saved configuration.
+    if not config_obj and company_id is None and branch_id is None:
         config_obj = CompanyConfiguration.objects.first()
 
     # Merge with default structure
@@ -103,12 +107,14 @@ def get_default_accounts(company_id=None, branch_id=None):
     acc_obj = None
     if company_id and branch_id:
         acc_obj = DefaultAccounts.objects.filter(company_id=company_id, branch_id=branch_id).first()
-    elif branch_id:
-        acc_obj = DefaultAccounts.objects.filter(branch_id=branch_id).first()
-    elif company_id:
+    if not acc_obj and company_id:
         acc_obj = DefaultAccounts.objects.filter(company_id=company_id).first()
+    elif not acc_obj and branch_id:
+        acc_obj = DefaultAccounts.objects.filter(branch_id=branch_id).first()
 
-    if not acc_obj:
+    # Avoid borrowing another company's account mapping when a tenant was
+    # explicitly requested; its own merged defaults are safer in that case.
+    if not acc_obj and company_id is None and branch_id is None:
         acc_obj = DefaultAccounts.objects.first()
 
     merged = DEFAULT_ACCOUNTS_DATA.copy()
