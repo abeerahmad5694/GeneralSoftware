@@ -25,6 +25,25 @@ class InventoryHelpers {
                 }
             }
         }
+        
+        // Handle Image Update
+        const previewImg = document.getElementById('image-preview');
+        const previewWrapper = document.getElementById('imagePreviewWrapper');
+        const fileInput = document.getElementById('product-image-input');
+        const deleteFlag = document.getElementById('deleteImageFlag');
+        
+        if (previewImg && previewWrapper) {
+            const imgUrl = data.prod_picture_thumb_url || data.prod_picture_url;
+            if (imgUrl) {
+                previewImg.src = imgUrl;
+                previewWrapper.classList.add('has-image');
+            } else {
+                previewImg.src = "";
+                previewWrapper.classList.remove('has-image');
+            }
+        }
+        if (fileInput) fileInput.value = "";
+        if (deleteFlag) deleteFlag.value = "false";
     }
     
     saveUpdateInventory = async function () {
@@ -109,6 +128,15 @@ class InventoryHelpers {
             form.reset();
             const invIdEl = document.getElementById('id_inv_id');
             if (invIdEl) invIdEl.value = '';
+            
+            // Reset image
+            const previewImg = document.getElementById('image-preview');
+            const previewWrapper = document.getElementById('imagePreviewWrapper');
+            const deleteFlag = document.getElementById('deleteImageFlag');
+            
+            if (previewImg) previewImg.src = "";
+            if (previewWrapper) previewWrapper.classList.remove('has-image');
+            if (deleteFlag) deleteFlag.value = "false";
         }
     }
 

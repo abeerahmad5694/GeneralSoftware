@@ -127,7 +127,7 @@ async function saveJvVoucher() {
         const response = await myLedgerHelpers.saveUpdateDynamicVoucher(payload);
         console.log('response', response)
         if (response.success) {
-            alert(response.message || 'Voucher saved successfully!');
+            // alert(response.message || 'Voucher saved successfully!');
 
             // Print/Preview the JV voucher after save
             const savedVno = response.vno || vno;
@@ -138,7 +138,7 @@ async function saveJvVoucher() {
                 window.DocumentPrinter.printDocument({
                     bill_no: `JV-${savedVno}`,
                     model_name: "Gledg",
-                    page_type: window.companyConfigurations?.vouchers?.default_page_size || "a4",
+                    page_type: (window.companyConfigurations?.vouchers?.default_page_size || "a4").toLowerCase(),
                     document_type: "voucher",
                     data_source: "server",
                     allow_multiple_print: false,

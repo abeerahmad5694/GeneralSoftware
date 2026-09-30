@@ -48,6 +48,10 @@ document.addEventListener('DOMContentLoaded', function () {
         searchFields: ['prod_name', 'alias_name', 'barcode', 'manualbc', 'inv_id'],
         displayColumns: [
             { key: 'inv_id',    header: 'ID',   width: '50px' },
+            { key: 'prod_picture_thumb', header: 'Img', width: '40px', render: (val, item) => {
+                if (val) return `<img src="/media/${val}" class="w-8 h-8 object-cover rounded shadow-sm border border-gray-200" style="min-width:32px;">`;
+                return `<img src="/static/no-image.webp" class="w-8 h-8 object-cover rounded shadow-sm border border-gray-200 opacity-50" style="min-width:32px;">`;
+            }},
             { key: 'prod_name', header: 'Name' },
             { key: 'base_price',header: 'Price', width: '70px' },
         ],

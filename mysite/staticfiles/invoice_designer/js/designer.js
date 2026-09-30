@@ -58,8 +58,27 @@
             license_number: "LIC-88213-B",
             logo_url: "",
         };
+        let items = [];
+        if (documentType === "purchase_invoice") {
+            items = [
+                { product_name: "Basmati Rice 5kg", product_name_ur: "باسمتی چاول 5 کلو", category: "Grocery", quantity: 20, unit: "Kg", rate: "1,000.00", discount_percent: 5, discount_amount: "1,000.00", amount: "20,000.00", batch_number: "B-12", batch_quantity: 20, expiry_date: "2027-01", pack_quantity_received: 20, trade_price: "1,150.00", retail_price: "1,200.00", old_cost: "980.00", landed_cost: "1,015.00" },
+                { product_name: "Cooking Oil 1L", product_name_ur: "کوکنگ آئل 1 لیٹر", category: "Grocery", quantity: 40, unit: "Ltr", rate: "180.00", discount_percent: 0, discount_amount: "0.00", amount: "7,200.00", batch_number: "B-07", batch_quantity: 40, expiry_date: "2026-11", pack_quantity_received: 40, trade_price: "195.00", retail_price: "210.00", old_cost: "170.00", landed_cost: "182.00" },
+            ];
+        } else if (documentType === "voucher") {
+            items = [
+                { account_code: "A-100", account_name: "Cash Account", counter_account_code: "C-0012", counter_account_name: "Walk-in Customer", description: "Payment received", debit_amount: "3,050.00", credit_amount: "0.00", amount: "3,050.00" },
+                { account_code: "C-0012", account_name: "Walk-in Customer", counter_account_code: "A-100", counter_account_name: "Cash Account", description: "Payment received", debit_amount: "0.00", credit_amount: "3,050.00", amount: "3,050.00" },
+            ];
+        } else {
+            items = [
+                { product_name: "Basmati Rice 5kg", product_name_ur: "باسمتی چاول 5 کلو", category: "Grocery", quantity: 2, unit: "Kg", rate: "1,200.00", discount_percent: 5, discount_amount: "120.00", amount: "2,400.00", cost_price: "1,015.00", net_cost: "2,030.00", item_notes: "" },
+                { product_name: "Cooking Oil 1L", product_name_ur: "کوکنگ آئل 1 لیٹر", category: "Grocery", quantity: 4, unit: "Ltr", rate: "200.00", discount_percent: 0, discount_amount: "0.00", amount: "800.00", cost_price: "182.00", net_cost: "728.00", item_notes: "" },
+            ];
+        }
+
         return {
-            bill_number: "10245",
+            bill_number: documentType === "voucher" ? "CR-10245" : "10245",
+            invoice_title: documentType === "voucher" ? "CASH RECEIPT VOUCHER" : "INVOICE",
             invoice_date: new Date().toLocaleDateString(),
             salesman: "Ali Raza",
             cashier: "Front Desk 1",
@@ -71,7 +90,7 @@
             print_time: new Date().toLocaleTimeString(),
             company,
             branch,
-            customer: { account_code: "C-0012", name: "Walk-in Customer", address: "", phone: "" },
+            customer: { account_code: "C-0012", name: "Walk-in Customer", address: "Shop 5, Main Bazaar", phone: "+92 300 1234567" },
             totals: {
                 total_items: 2,
                 subtotal: "3,200.00",
@@ -87,15 +106,7 @@
                 change_amount: "0.00",
                 previous_balance: "1,250.00",
             },
-            items: isPurchase
-                ? [
-                    { product_name: "Basmati Rice 5kg", category: "Grocery", quantity: 20, unit: "Kg", rate: "1,000.00", discount_percent: 5, discount_amount: "1,000.00", amount: "20,000.00", batch_number: "B-12", batch_quantity: 20, expiry_date: "2027-01", pack_quantity_received: 20, trade_price: "1,150.00", retail_price: "1,200.00", old_cost: "980.00", landed_cost: "1,015.00" },
-                    { product_name: "Cooking Oil 1L", category: "Grocery", quantity: 40, unit: "Ltr", rate: "180.00", discount_percent: 0, discount_amount: "0.00", amount: "7,200.00", batch_number: "B-07", batch_quantity: 40, expiry_date: "2026-11", pack_quantity_received: 40, trade_price: "195.00", retail_price: "210.00", old_cost: "170.00", landed_cost: "182.00" },
-                  ]
-                : [
-                    { product_name: "Basmati Rice 5kg", category: "Grocery", quantity: 2, unit: "Kg", rate: "1,200.00", discount_percent: 5, discount_amount: "120.00", amount: "2,400.00", cost_price: "1,015.00", net_cost: "2,030.00", item_notes: "" },
-                    { product_name: "Cooking Oil 1L", category: "Grocery", quantity: 4, unit: "Ltr", rate: "200.00", discount_percent: 0, discount_amount: "0.00", amount: "800.00", cost_price: "182.00", net_cost: "728.00", item_notes: "" },
-                  ],
+            items: items,
         };
     }
 
@@ -420,9 +431,31 @@
     // ── selection ────────────────────────────────────────────────────────
 
     function onPreviewClick(event) {
+        // Allow clicking on td (data cells) to select the column via its th
+        const tdTarget = event.target.closest("td");
+        if (tdTarget) {
+            // Find which column index this td corresponds to
+            const tr = tdTarget.parentElement;
+            const tdIndex = Array.from(tr.children).indexOf(tdTarget);
+            const table = tr.closest("table");
+            if (table) {
+                const th = table.querySelector("thead tr")?.children[tdIndex];
+                if (th && th.dataset.field) {
+                    document.querySelectorAll(".doc-field.selected, th.selected, td.selected").forEach((el) => el.classList.remove("selected"));
+                    th.classList.add("selected");
+                    tdTarget.classList.add("selected");
+                    const parts = th.dataset.field.split(":");
+                    if (parts[0] === "items" && parts[1] === "column") {
+                        state.activeSection = "items";
+                        selectField("items", parts[2]);
+                        return;
+                    }
+                }
+            }
+        }
         const target = event.target.closest("[data-field]");
         if (!target) return;
-        document.querySelectorAll(".doc-field.selected, th.selected").forEach((el) => el.classList.remove("selected"));
+        document.querySelectorAll(".doc-field.selected, th.selected, td.selected").forEach((el) => el.classList.remove("selected"));
         target.classList.add("selected");
         const parts = target.dataset.field.split(":");
         if (parts[0] === "items" && parts[1] === "column") {
@@ -480,7 +513,7 @@
                     <div class="prop-group"><label>Height (e.g. 40px, 20mm)</label><input type="text" id="prop-logo-height" value="${fieldConfig.logo_height || ""}"></div>
                 </div>`;
 
-        // ── ITEMS COLUMN ───────────────────────────────────────────────
+            // ── ITEMS COLUMN ───────────────────────────────────────────────
         } else if (section === "items") {
             contentField = `
                 <div class="prop-group"><label>Column heading</label><input type="text" id="prop-label" value="${fieldConfig.label || ""}"></div>
@@ -494,9 +527,13 @@
                 <div class="prop-toggle-row">
                     <span>Always show column (even if all values are 0)</span>
                     <span class="toggle small ${fieldConfig.always_show ? "on" : ""}" id="prop-always-show"></span>
+                </div>
+                <div class="prop-toggle-row">
+                    <span>Show table borders</span>
+                    <span class="toggle small ${state.configuration.sections.items.table_borders ? "on" : ""}" id="prop-table-borders"></span>
                 </div>`;
 
-        // ── TOTALS FIELD ───────────────────────────────────────────────
+            // ── TOTALS FIELD ───────────────────────────────────────────────
         } else if (section === "totals") {
             contentField = `
                 <div class="prop-group"><label>Label</label><input type="text" id="prop-label" value="${fieldConfig.label || ""}"></div>
@@ -505,7 +542,7 @@
                     <span class="toggle small ${fieldConfig.hide_if_zero !== false ? "on" : ""}" id="prop-hide-if-zero"></span>
                 </div>`;
 
-        // ── REGULAR TEXT/STATIC FIELD ──────────────────────────────────
+            // ── REGULAR TEXT/STATIC FIELD ──────────────────────────────────
         } else {
             const prefix = fieldConfig.prefix || "";
             const suffix = fieldConfig.suffix || "";
@@ -527,6 +564,13 @@
                     <div class="prop-group"><label>Prefix <span class="hint">(e.g. INV-)</span></label><input type="text" id="prop-prefix" value="${prefix}"></div>
                     <div class="prop-group"><label>Suffix</label><input type="text" id="prop-suffix" value="${suffix}"></div>
                 </div>`;
+            if (section === "customer") {
+                contentField += `
+                    <div class="prop-group">
+                        <label>Exclude Accounts <span class="hint">(comma separated names or codes)</span></label>
+                        <input type="text" id="prop-exclude-accounts" placeholder="e.g. Walk-in, C-001" value="${state.configuration.sections.customer.exclude_accounts || ""}">
+                    </div>`;
+            }
         }
 
         panel.innerHTML = `
@@ -580,6 +624,8 @@
         bindInput("prop-logo-height", (value) => (fieldConfig.logo_height = value));
         bindToggle("prop-always-show", (value) => (fieldConfig.always_show = value));
         bindToggle("prop-hide-if-zero", (value) => (fieldConfig.hide_if_zero = value));
+        bindToggle("prop-table-borders", (value) => (state.configuration.sections.items.table_borders = value));
+        bindInput("prop-exclude-accounts", (value) => (state.configuration.sections.customer.exclude_accounts = value));
 
         // Logo clear button
         const clearBtn = document.getElementById("prop-logo-clear");

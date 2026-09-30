@@ -198,7 +198,7 @@ function Setup_Listeners() {
 btnConvertToWholesale.addEventListener('click', (e) => {
   const selectedValue = "wholesale";
   const modeId = POS_MAPPING.radioValueToModeId[selectedValue] || 1;
-  console.log('click');
+  // console.log('click');
 
   const cart = getCart();
   cart.forEach((item) => {

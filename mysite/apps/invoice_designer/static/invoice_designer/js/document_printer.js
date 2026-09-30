@@ -21,6 +21,7 @@
  *       page_type: "thermal_80",
  *       document_type: "pos_invoice",
  *       data_source: "local",           // "local" | "server"
+ *       renderSource: "local",          // "local" | "server"
  *       payload: {...},                 // required when data_source === "local"
  *       allow_multiple_print: false,
  *       copies: 1,
@@ -38,7 +39,7 @@ window.DocumentPrinter = (function () {
         documentData: "/invoice-designer/api/document-data/",
     };
 
-    let modalState = null;   // { documentType, dataSource, payload, billNumber, modelName }
+    let modalState = null;   // { documentType, dataSource, renderSource, payload, billNumber, modelName }
 
     function mapLocalPayloadToDocumentData(payload) {
         if (!payload) return {};
@@ -153,13 +154,18 @@ window.DocumentPrinter = (function () {
             return cached.configuration;
         }
 
-        // Otherwise fetch from server and cache locally
-        const query = new URLSearchParams({ document_type: documentType, page_type: pageType });
-        const data = await fetchJson(`${ENDPOINTS.configuration}?${query.toString()}`);
-        if (data.configuration) {
-            await saveLocalTemplateConfig(documentType, pageType, data.configuration, data.updated_at);
+        try {
+            // Otherwise fetch from server and cache locally
+            const query = new URLSearchParams({ document_type: documentType, page_type: pageType });
+            const data = await fetchJson(`${ENDPOINTS.configuration}?${query.toString()}`);
+            if (data.configuration) {
+                await saveLocalTemplateConfig(documentType, pageType, data.configuration, data.updated_at);
+            }
+            return data.configuration;
+        } catch(e) {
+            console.warn("Failed to fetch configuration", e);
+            return null; // Handle fallback gracefully
         }
-        return data.configuration;
     }
 
     async function loadServerDocumentData(documentType, modelName, billNumber, pageType) {
@@ -187,19 +193,73 @@ window.DocumentPrinter = (function () {
         };
     }
 
-    async function renderHtml(configuration, documentData) {
-        const data = await fetchJson(ENDPOINTS.render, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ configuration, document_data: documentData }),
-        });
-        return data.html;
+    async function renderHtml(configuration, documentData, renderSource) {
+        // ── Server render path ─────────────────────────────────────────────
+        if (renderSource === 'server') {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 800);
+                const data = await fetchJson(ENDPOINTS.render, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ configuration, document_data: documentData }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                return data.html;
+            } catch (err) {
+                console.warn("Server render failed or timed out, falling back to local render", err);
+                // Fall through to local render below
+            }
+        }
+
+        // ── Local render path ──────────────────────────────────────────────
+        if (!window.OfflineTemplateEngine || typeof window.OfflineTemplateEngine.renderFromCache !== 'function') {
+            // Engine not loaded — last resort: try server render regardless of renderSource
+            console.warn("OfflineTemplateEngine not available, falling back to server render");
+            try {
+                const data = await fetchJson(ENDPOINTS.render, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ configuration, document_data: documentData }),
+                });
+                return data.html;
+            } catch (serverErr) {
+                console.error("Server render also failed", serverErr);
+                return `<div style="padding:12px;color:#c00;font-family:monospace">
+                    <b>Print Error</b><br>offline_template_engine.js is not loaded on this page.<br>
+                    Add it to your template before document_printer.js.
+                </div>`;
+            }
+        }
+
+        try {
+            const registry = await window.OfflineTemplateEngine.getCachedRegistry();
+            return window.OfflineTemplateEngine.renderFromCache(configuration, documentData, registry);
+        } catch (err) {
+            console.error("Local render failed", err);
+            return `<div style="color:red">Render Error: ${err.message}</div>`;
+        }
     }
 
     // ------------------------------------------------------ modal plumbing
 
-    function ensureStylesheet() {
-        if (document.querySelector("link[data-document-printer-css]")) return;
+    async function ensureStylesheet() {
+        if (document.querySelector("link[data-document-printer-css]") || document.querySelector("style[data-document-printer-css]")) return;
+        
+        try {
+            if (window.IndexDBConfig) {
+                const rec = await window.IndexDBConfig.get_record("app_cache", "designer_css");
+                if (rec && rec.data) {
+                    const style = document.createElement("style");
+                    style.dataset.documentPrinterCss = "true";
+                    style.textContent = rec.data;
+                    document.head.appendChild(style);
+                    return;
+                }
+            }
+        } catch(e) {}
+
         const link = document.createElement("link");
         link.rel = "stylesheet";
         link.href = "/static/invoice_designer/css/designer.css";
@@ -207,8 +267,8 @@ window.DocumentPrinter = (function () {
         document.head.appendChild(link);
     }
 
-    function ensureModal() {
-        ensureStylesheet();
+    async function ensureModal() {
+        await ensureStylesheet();
         let overlay = document.getElementById("print-modal-overlay");
         if (overlay) return overlay;
 
@@ -247,7 +307,7 @@ window.DocumentPrinter = (function () {
     }
 
     async function renderIntoModal(pageType) {
-        const overlay = ensureModal();
+        const overlay = await ensureModal();
         const pageContainer = document.getElementById("print-modal-page");
 
         let configuration = null;
@@ -258,15 +318,29 @@ window.DocumentPrinter = (function () {
             documentData = (modalState.payload && modalState.payload.totals)
                 ? modalState.payload
                 : mapLocalPayloadToDocumentData(modalState.payload);
+                
+            if (window.OfflineTemplateEngine && (!documentData.company || !documentData.company.logo_url)) {
+                const compData = await window.OfflineTemplateEngine.getCachedCompanyData();
+                if (compData) {
+                    documentData.company = compData.company || {};
+                    documentData.branch = compData.branch || {};
+                }
+            }
         } else {
             // Check if local template config already exists
             const cachedConfig = await getLocalTemplateConfig(modalState.documentType, pageType);
-            const serverResult = await loadServerDocumentData(modalState.documentType, modalState.modelName, modalState.billNumber, pageType);
-            documentData = serverResult.document_data;
-            configuration = (cachedConfig && cachedConfig.configuration) || serverResult.template_config || await loadConfiguration(modalState.documentType, pageType);
+            try {
+                const serverResult = await loadServerDocumentData(modalState.documentType, modalState.modelName, modalState.billNumber, pageType);
+                documentData = serverResult.document_data;
+                configuration = (cachedConfig && cachedConfig.configuration) || serverResult.template_config || await loadConfiguration(modalState.documentType, pageType);
+            } catch (err) {
+                console.warn("Server document fetch failed, using fallback empty data", err);
+                configuration = (cachedConfig && cachedConfig.configuration) || await loadConfiguration(modalState.documentType, pageType);
+                documentData = {}; // Minimal fallback
+            }
         }
 
-        const html = await renderHtml(configuration, documentData);
+        const html = await renderHtml(configuration, documentData, modalState.renderSource);
         pageContainer.innerHTML = html;
         pageContainer.dataset.pageType = pageType;
         if (!modalState.directprint) {
@@ -284,21 +358,20 @@ window.DocumentPrinter = (function () {
      */
 
     window.addEventListener('keydown',(e)=>{
-        // console.log('e.key=',e.key)
         if(e.key == 'Escape'){
             e.preventDefault();
             closePreviewModal();
         }
-
     })
+    
     async function openPreviewModal(options) {
-        const { documentType, pageType, dataSource = "server", payload = null, billNumber, modelName, directprint = false } = options;
+        const { documentType, pageType, dataSource = "server", renderSource = "local", payload = null, billNumber, modelName, directprint = false } = options;
         if (!documentType || !pageType) {
             throw new Error("DocumentPrinter.openPreviewModal: documentType and pageType are required");
         }
-        modalState = { documentType, dataSource, payload, billNumber, modelName, directprint };
+        modalState = { documentType, dataSource, renderSource, payload, billNumber, modelName, directprint };
 
-        ensureModal();
+        await ensureModal();
         const pageTypeSelect = document.getElementById("print-modal-page-type");
         pageTypeSelect.value = pageType;
         pageTypeSelect.onchange = () => renderIntoModal(pageTypeSelect.value);
@@ -325,13 +398,12 @@ window.DocumentPrinter = (function () {
             page_type: pageType,
             document_type: documentType,
             data_source: dataSource = "server",
+            renderSource = "local",
             payload = null,
             allow_multiple_print: allowMultiplePrint = false,
             copies = 1,
             directprint = false,
         } = options;
-
-        
 
         if (!documentType || !pageType) {
             throw new Error("DocumentPrinter.printDocument: document_type and page_type are required");
@@ -341,7 +413,7 @@ window.DocumentPrinter = (function () {
         }
 
         const html = await openPreviewModal({
-            documentType, pageType, dataSource, payload, billNumber: billNo, modelName, directprint,
+            documentType, pageType, dataSource, renderSource, payload, billNumber: billNo, modelName, directprint,
         });
 
         const resolvedCopies = allowMultiplePrint ? Math.max(1, parseInt(copies, 10) || 1) : 1;
@@ -358,8 +430,6 @@ window.DocumentPrinter = (function () {
         }
         return html;
     }
-
-    
 
     return { printDocument, openPreviewModal, closePreviewModal };
 })();

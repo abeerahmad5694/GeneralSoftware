@@ -222,9 +222,9 @@ function addDynamicVoucherRow() {
         <td><div class="dvm-acc-code-cell"><input type="text" class="dvm_acc_code_in_modal"/><button type="button" class="dvm-search-btn" title="Search Account (O)">🔍</button></div></td>
         <td><input type="text" class="dvm_head_in_modal" /></td>
         <td><input type="text" class="dvm_notes_in_modal"/></td>
+        <td><input type="text" class="dvm_amount_in_modal" value="0.00" /></td>
         <td><input type="text" class="dvm_receipt_no_in_modal" value="0" /></td>
         <td><input type="text" class="dvm_chq_no_in_modal" value="0" /></td>
-        <td><input type="text" class="dvm_amount_in_modal" value="0.00" /></td>
     `;
     tbody.appendChild(tr);
     attachRowEventListeners(tr);
@@ -304,7 +304,7 @@ async function saveUpdateDynamicVoucher() {
     for (let i = 0; i < rows.length; i++) {
         const c = rows[i].cells;
         const accCode = c[0].querySelector('.dvm_acc_code_in_modal').value.trim();
-        const amount = c[5].firstElementChild.value.trim();
+        const amount = c[3].firstElementChild.value.trim();
 
         if (!accCode || amount === '0.00' || amount === '') {
             continue;
@@ -324,9 +324,9 @@ async function saveUpdateDynamicVoucher() {
             accCode,
             head: c[1].firstElementChild.value.trim(),
             notes: c[2].firstElementChild.value.trim(),
-            receiptNo: c[3].firstElementChild.value.trim(),
-            chqNo: c[4].firstElementChild.value.trim(),
             amount,
+            receiptNo: c[4].firstElementChild.value.trim(),
+            chqNo: c[5].firstElementChild.value.trim(),
             refAccCode,
         });
     }
@@ -355,7 +355,7 @@ async function saveUpdateDynamicVoucher() {
 
     try {
         const response = await myLedgerHelpers.saveUpdateDynamicVoucher(payload);
-        alert(response.message);
+        // alert(response.message);
         if (response.success) {
             // Print/Preview the voucher after save
             const savedVno = response.vno || vno;
@@ -366,7 +366,7 @@ async function saveUpdateDynamicVoucher() {
                 window.DocumentPrinter.printDocument({
                     bill_no: billNumber,
                     model_name: "Gledg",
-                    page_type: window.companyConfigurations?.vouchers?.default_page_size || "a4",
+                    page_type: (window.companyConfigurations?.vouchers?.default_page_size || "a4").toLowerCase(),
                     document_type: "voucher",
                     data_source: "server",
                     allow_multiple_print: false,
@@ -392,6 +392,8 @@ async function saveUpdateDynamicVoucher() {
             //     }
             // }
 
+        } else {
+            alert(response.message)
         }
     } catch (err) {
         console.error(err);
@@ -567,16 +569,16 @@ function fillDynamicVoucherModal(data) {
             const accCodeInput = row.querySelector('.dvm_acc_code_in_modal');
             const headInput = row.querySelector('.dvm_head_in_modal');
             const notesInput = row.querySelector('.dvm_notes_in_modal');
+            const amountInput = row.querySelector('.dvm_amount_in_modal');
             const receiptInput = row.querySelector('.dvm_receipt_no_in_modal');
             const chqInput = row.querySelector('.dvm_chq_no_in_modal');
-            const amountInput = row.querySelector('.dvm_amount_in_modal');
 
             if (accCodeInput) accCodeInput.value = line.accCode || '';
             if (headInput) headInput.value = line.head || '';
             if (notesInput) notesInput.value = line.notes || '';
+            if (amountInput) amountInput.value = line.amount || '0.00';
             if (receiptInput) receiptInput.value = line.receiptNo || '0';
             if (chqInput) chqInput.value = line.chqNo || '0';
-            if (amountInput) amountInput.value = line.amount || '0.00';
         });
     }
 

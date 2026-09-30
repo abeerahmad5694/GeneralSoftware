@@ -29,7 +29,7 @@ if (ADJBtn) ADJBtn.addEventListener("click", () => openDynamicVoucherModal("ADJ"
 
 // if (closeBtn) closeBtn.addEventListener("click", closeDynamicVoucherModal);
 dateFrom.value = new Date(new Date().getTime() - (365 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);// one year befoore
-dateTo.value = new Date().toISOString().slice(0, 10);
+dateTo.value = new Date(new Date().getTime()+(365 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
 
 GlobalSearchModal.init([
     {

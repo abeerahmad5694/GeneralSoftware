@@ -71,6 +71,7 @@
     justify-content: flex-end;
     gap: 9px;
     flex-wrap: wrap;
+    /* float: right !important; */
 }
 
 .dash-period-control {
@@ -879,6 +880,7 @@
 }
 
 @media (max-width: 760px) {
+    
     .dash-wrapper {
         gap: 14px;
         padding: 16px 14px 24px;
@@ -886,6 +888,11 @@
 
     .dash-header {
         align-items: flex-start;
+        /* display: none; */
+    }
+
+    .dash-heading{
+        display: none;
     }
 
     .dash-header-controls {

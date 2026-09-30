@@ -61,6 +61,15 @@ class InventoryForm(forms.ModelForm):
                     'lang': 'ur',
                     'style': 'font-family: "Jameel Noori Nastaleeq", serif; text-align: right;'
                 })
+
+
+
+            if field_name == 'prod_picture':
+                field.widget = forms.FileInput(attrs={
+                    'accept': 'image/*',
+                    'class': 'hidden',
+                    'id': 'product-image-input'
+                })
         # self.fields['company'].widget.attrs.update({'hidden': True})
         # self.fields['branch'].widget.attrs.update({'hidden': True})
         # self.fields['company'].initial = company

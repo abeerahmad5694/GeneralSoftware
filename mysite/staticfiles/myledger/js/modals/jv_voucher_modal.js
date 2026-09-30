@@ -5,59 +5,59 @@ import myLedgerHelpers from "/static/myledger/js/services/helpers.js";
 import { deleteDynamicVoucher } from "./dynamic_voucher_modal.js";
 
 GlobalSearchModal.init([{
-         modalId: 'jvm_btn-search-drAccount',
-         triggerSelector: '#jvm_btn-search-drAccount',
-         triggerKey: null,                    // optional hotkey
-         title: 'Find Debit Account',
-         placeholder: 'Search by account head, name, code ...',
-         appLabel: 'myaccounts',
-         modelName: 'Accounts',
-         primaryKey: 'ACC_CODE',
-         indexdbStore: null,            // null = skip local
-         searchFields: ['ACC_CODE','ACC_NAME'],
-         displayColumns: [
-             { key: 'ACC_CODE', header: 'Code', width: '80px' },
-             { key: 'ACC_NAME', header: 'Account Name' },
-         ],
-         excludeFilters: { 'TYPE__exact': 'Group' },   // exclude from local results
-         pageSize: 50,
-         onSelect: function(item) {
-            const drCodeInput = document.getElementById('jvm_acc_code_dr');
-            const drNameInput = document.getElementById('jvm_acc_head_dr');
-            const drIdInput = document.getElementById('jvm_account_from_id');
+    modalId: 'jvm_btn-search-drAccount',
+    triggerSelector: '#jvm_btn-search-drAccount',
+    triggerKey: null,                    // optional hotkey
+    title: 'Find Debit Account',
+    placeholder: 'Search by account head, name, code ...',
+    appLabel: 'myaccounts',
+    modelName: 'Accounts',
+    primaryKey: 'ACC_CODE',
+    indexdbStore: null,            // null = skip local
+    searchFields: ['ACC_CODE', 'ACC_NAME'],
+    displayColumns: [
+        { key: 'ACC_CODE', header: 'Code', width: '80px' },
+        { key: 'ACC_NAME', header: 'Account Name' },
+    ],
+    excludeFilters: { 'TYPE__exact': 'Group' },   // exclude from local results
+    pageSize: 50,
+    onSelect: function (item) {
+        const drCodeInput = document.getElementById('jvm_acc_code_dr');
+        const drNameInput = document.getElementById('jvm_acc_head_dr');
+        const drIdInput = document.getElementById('jvm_account_from_id');
 
-            if (drCodeInput) drCodeInput.value = item.ACC_CODE;
-            if (drNameInput) drNameInput.value = item.ACC_NAME;
-            if (drIdInput) drIdInput.value = item.ACC_CODE;
-          }
-     },
-    {
-         modalId: 'jvm_btn-search-crAccount',
-         triggerSelector: '#jvm_btn-search-crAccount',
-         triggerKey: null,                    // optional hotkey
-         title: 'Find Credit Account',
-         placeholder: 'Search by account head, name, code ...',
-         appLabel: 'myaccounts',
-         modelName: 'Accounts',
-         primaryKey: 'ACC_CODE',
-         indexdbStore: null,            // null = skip local
-         searchFields: ['ACC_CODE','ACC_NAME'],
-         displayColumns: [
-             { key: 'ACC_CODE', header: 'Code', width: '80px' },
-             { key: 'ACC_NAME', header: 'Account Name' },
-         ],
-         excludeFilters: { 'TYPE__exact': 'Group' },   // exclude from local results
-         pageSize: 50,
-         onSelect: function(item) {
-            const drCodeInput = document.getElementById('jvm_acc_code_cr');
-            const drNameInput = document.getElementById('jvm_acc_head_cr');
-            const drIdInput = document.getElementById('jvm_account_to_id');
+        if (drCodeInput) drCodeInput.value = item.ACC_CODE;
+        if (drNameInput) drNameInput.value = item.ACC_NAME;
+        if (drIdInput) drIdInput.value = item.ACC_CODE;
+    }
+},
+{
+    modalId: 'jvm_btn-search-crAccount',
+    triggerSelector: '#jvm_btn-search-crAccount',
+    triggerKey: null,                    // optional hotkey
+    title: 'Find Credit Account',
+    placeholder: 'Search by account head, name, code ...',
+    appLabel: 'myaccounts',
+    modelName: 'Accounts',
+    primaryKey: 'ACC_CODE',
+    indexdbStore: null,            // null = skip local
+    searchFields: ['ACC_CODE', 'ACC_NAME'],
+    displayColumns: [
+        { key: 'ACC_CODE', header: 'Code', width: '80px' },
+        { key: 'ACC_NAME', header: 'Account Name' },
+    ],
+    excludeFilters: { 'TYPE__exact': 'Group' },   // exclude from local results
+    pageSize: 50,
+    onSelect: function (item) {
+        const drCodeInput = document.getElementById('jvm_acc_code_cr');
+        const drNameInput = document.getElementById('jvm_acc_head_cr');
+        const drIdInput = document.getElementById('jvm_account_to_id');
 
-            if (drCodeInput) drCodeInput.value = item.ACC_CODE;
-            if (drNameInput) drNameInput.value = item.ACC_NAME;
-            if (drIdInput) drIdInput.value = item.ACC_CODE;
-          }
-     }]);
+        if (drCodeInput) drCodeInput.value = item.ACC_CODE;
+        if (drNameInput) drNameInput.value = item.ACC_NAME;
+        if (drIdInput) drIdInput.value = item.ACC_CODE;
+    }
+}]);
 
 // Initialize date to today's date if empty
 const dateInput = document.getElementById('jvm_date');
@@ -107,9 +107,9 @@ async function saveJvVoucher() {
 
         const payload = {
             acc_from_id: acc_from_id,
-            acc_head_dr : acc_head_dr,
+            acc_head_dr: acc_head_dr,
             acc_to_id: acc_to_id,
-            acc_head_cr:acc_head_cr,
+            acc_head_cr: acc_head_cr,
             voucherType: 'JV',
             date: date,
             notes: notes,
@@ -125,29 +125,38 @@ async function saveJvVoucher() {
 
         // console.log("Saving JV Voucher Payload:", payload);
         const response = await myLedgerHelpers.saveUpdateDynamicVoucher(payload);
-        
+        console.log('response', response)
         if (response.success) {
             alert(response.message || 'Voucher saved successfully!');
-            const isModal = document.querySelector('.jvm-modal-overlay');
-            // console.log(isModal, '----------------')
-            // return;
-            closeJvVoucherModal();
-            if(!isModal){
-                const url = window.location.pathname
-                const last = url.replace(/\/\d+\/?$/, '/')
-                window.location.href = last
-                // const url = window.location.pathname
-                // let not_modal = false
-                // if (url.split('/').length < 4){
-                //     not_modal = true
-                // }
-                // // Refresh parent ledger if function exists
-                // if (window.refreshLedger) {
-                //     window.refreshLedger();
-                // } else {
-                    
-                // }
+
+            // Print/Preview the JV voucher after save
+            const savedVno = response.vno || vno;
+            console.log('savevno', savedVno)
+            if (savedVno) {
+                console.log('skfjsdkfjslkdfjlsdkfjlskdfjlsdjfldj')
+                console.log('window.DocumentPrinter', window.DocumentPrinter)
+                window.DocumentPrinter.printDocument({
+                    bill_no: `JV-${savedVno}`,
+                    model_name: "Gledg",
+                    page_type: window.companyConfigurations?.vouchers?.default_page_size || "a4",
+                    document_type: "voucher",
+                    data_source: "server",
+                    allow_multiple_print: false,
+                    copies: 1,
+                }).catch((printError) => {
+                    console.error("Voucher saved, but print preview failed:", printError);
+                });
+
+
             }
+
+            const isModal = document.querySelector('.jvm-modal-overlay');
+            closeJvVoucherModal();
+            // if(!isModal){
+            //     const url = window.location.pathname
+            //     const last = url.replace(/\/\d+\/?$/, '/')
+            //     window.location.href = last
+            // }
         } else {
             alert(response.error || 'Failed to save voucher.');
         }
@@ -175,7 +184,7 @@ if (deleteBtn && vnoEl) {
         }
     });
 }
-else{
+else {
     console.error('delete_voucher_button not found');
 }
 
@@ -200,8 +209,8 @@ else{
 // Reset modal fields
 function resetJvVoucherModal() {
     const fields = [
-        'jvm_vno', 'jvm_account_from_id', 'jvm_account_to_id', 'jvm_amount', 
-        'jvm_notes', 'jvm_chqno', 'jvm_receiptno', 'jvm_acc_code_dr', 
+        'jvm_vno', 'jvm_account_from_id', 'jvm_account_to_id', 'jvm_amount',
+        'jvm_notes', 'jvm_chqno', 'jvm_receiptno', 'jvm_acc_code_dr',
         'jvm_acc_head_dr', 'jvm_acc_code_cr', 'jvm_acc_head_cr'
     ];
     fields.forEach(id => {
@@ -311,7 +320,7 @@ function closeJvVoucherModal() {
 // Close on overlay click
 var jvOverlay = document.getElementById('jvVoucherModalOverlay');
 if (jvOverlay) {
-    jvOverlay.addEventListener('click', function(e) {
+    jvOverlay.addEventListener('click', function (e) {
         if (e.target === this) closeJvVoucherModal();
     });
 }

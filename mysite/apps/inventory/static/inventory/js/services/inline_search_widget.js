@@ -153,12 +153,16 @@ export class InlineSearchWidget {
             html += `<tr class="isw-row" data-index="${idx}">`;
             cols.forEach(col => {
                 let val = item[col.key];
-                if (val === null || val === undefined) val = '';
-                let display = String(val);
-                if (tokens.length > 0) {
-                    display = highlightTokens(display, tokens);
+                if (col.render) {
+                    html += `<td style="vertical-align: middle;">${col.render(val, item)}</td>`;
+                } else {
+                    if (val === null || val === undefined) val = '';
+                    let display = String(val);
+                    if (tokens.length > 0) {
+                        display = highlightTokens(display, tokens);
+                    }
+                    html += `<td style="vertical-align: middle;">${display}</td>`;
                 }
-                html += `<td>${display}</td>`;
             });
             html += '</tr>';
         });

@@ -423,6 +423,65 @@
         .btn-action {
             min-height: 44px !important;
         }
+    }    /* --- Image Upload UI --- */
+    .image-drop-zone {
+        border: 2px dashed #cbd5e1;
+        border-radius: 8px;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+        height: 180px;
+    }
+    .image-drop-zone:hover, .image-drop-zone.drag-over {
+        border-color: var(--color-primary);
+        background: #f1f5f9;
+    }
+    .image-preview-wrapper {
+        position: absolute;
+        inset: 0;
+        display: none;
+        background: #fff;
+    }
+    .image-preview-wrapper.has-image {
+        display: block;
+    }
+    .image-preview-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+    .image-actions {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        display: flex;
+        gap: 6px;
+    }
+    .image-btn {
+        background: rgba(0,0,0,0.7);
+        color: white;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 11px;
+        cursor: pointer;
+        transition: background 0.2s;
+        border: none;
+    }
+    .image-btn:hover {
+        background: rgba(0,0,0,0.9);
+    }
+    .image-btn.btn-remove {
+        background: rgba(220, 38, 38, 0.8);
+    }
+    .image-btn.btn-remove:hover {
+        background: rgba(220, 38, 38, 1);
     }
 </style>
 {% endblock %}
@@ -431,7 +490,7 @@
 <main class="flex h-full overflow-hidden">
     <!-- Left Panel: Data Entry -->
     <div class="panel-left custom-scroll p-4 md:p-6 overflow-y-auto">
-        <form id="inventoryForm" method="POST" class="space-y-4">
+        <form id="inventoryForm" method="POST" enctype="multipart/form-data" class="space-y-4">
             {% csrf_token %}
 
             <input type="hidden" name="inv_id" value="{{ form.inv_id|default:'' }}" id="id_inv_id">
@@ -547,7 +606,7 @@
 
                 <!-- Pricing -->
                 <div class="surface p-4 rounded-lg border border-[var(--border-color)]">
-                    <div class="section-title text-orange-700">Pricing & Costing</div>
+                    <div class="section-title text-orange-700">Pricing</div>
                     <div class="space-y-1">
                         <div class="form-group-h">
                             <label class="form-label-h">Market Price</label>
@@ -561,6 +620,11 @@
                             <label class="form-label-h">WS Disc %</label>
                             <div class="form-input-h">{{ form.ws_disc_per }}</div>
                         </div>
+
+
+
+
+                         {% if 'see_cost_in_reports' in user_perm_codes  %}
                         <div class="form-group-h">
                             <label class="form-label-h">Cost Price</label>
                             <div class="form-input-h">{{ form.cost }}</div>
@@ -569,6 +633,11 @@
                             <label class="form-label-h">Last Pur</label>
                             <div class="form-input-h">{{ form.last_pur_price }}</div>
                         </div>
+                        {%endif%}
+
+
+
+
                     </div>
                 </div>
             </div>
@@ -599,8 +668,8 @@
                             <label class="form-label-h">Disc %</label>
                             <div class="form-input-h">{{ form.base_disc_per }}</div>
                         </div>
-                        <div class="form-group-h">
-                            <label class="form-label-h">Min Sale</label>
+                        <div class="form-group-h hidden">
+                            <label class="form-label-h">Min Sale Rate</label>
                             <div class="form-input-h">{{ form.min_base_sale_price }}</div>
                         </div>
                     </div>
@@ -671,6 +740,39 @@
 
 
 
+            <!-- Image Upload Section -->
+            <div class="surface p-4 rounded-lg border border-[var(--border-color)] col-span-1 md:col-span-3 lg:col-span-4 mt-4">
+                <div class="section-title text-indigo-600">
+                    <i class="fas fa-image"></i> Product Image
+                </div>
+                
+                <div class="image-drop-zone mt-2" id="imageDropZone" onclick="document.getElementById('product-image-input').click()">
+                    <div class="text-gray-400 mb-2">
+                        <i class="fas fa-cloud-upload-alt text-3xl"></i>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-700">Click to upload or drag and drop</div>
+                    <div class="text-xs text-gray-500 mt-1">SVG, PNG, JPG or WEBP (max. 2MB)</div>
+                    
+                    <div class="image-preview-wrapper {% if form.instance.prod_picture %}has-image{% endif %}" id="imagePreviewWrapper">
+                        <img id="image-preview" src="{% if form.instance.prod_picture %}{{ form.instance.prod_picture.url }}{% endif %}">
+                        <div class="image-actions" onclick="event.stopPropagation()">
+                            <button type="button" class="image-btn" onclick="document.getElementById('product-image-input').click()">
+                                <i class="fas fa-edit"></i> Change
+                            </button>
+                            <button type="button" class="image-btn btn-remove" id="btnRemoveImage">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <input type="hidden" name="delete_image" id="deleteImageFlag" value="false">
+                <input type="file" name="prod_picture" id="product-image-input" class="hidden" accept="image/*">
+            </div>
+            
+
+
+
         </form>
     </div>
 
@@ -731,6 +833,75 @@
 {% endblock %}
 
 {% block extra_js %}
+
+
+
+<script>
+    const dropZone = document.getElementById('imageDropZone');
+    const fileInput = document.getElementById('product-image-input');
+    const previewWrapper = document.getElementById('imagePreviewWrapper');
+    const previewImg = document.getElementById('image-preview');
+    const deleteFlag = document.getElementById('deleteImageFlag');
+    const btnRemove = document.getElementById('btnRemoveImage');
+
+    if (dropZone) {
+        dropZone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+        dropZone.addEventListener('dragleave', e => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+        });
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelection(fileInput.files[0]);
+            }
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', e => {
+            if (e.target.files.length) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+    }
+
+    function handleFileSelection(file) {
+        if (file.size > 2 * 1024 * 1024) {
+            alert("Maximum file size is 2MB");
+            fileInput.value = "";
+            return;
+        }
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+        if (!validTypes.includes(file.type)) {
+            alert("Only JPG, PNG, WEBP, and SVG formats are allowed.");
+            fileInput.value = "";
+            return;
+        }
+        
+        deleteFlag.value = "false";
+        previewImg.src = URL.createObjectURL(file);
+        previewWrapper.classList.add('has-image');
+    }
+
+    if (btnRemove) {
+        btnRemove.addEventListener('click', e => {
+            e.stopPropagation();
+            fileInput.value = "";
+            previewImg.src = "";
+            previewWrapper.classList.remove('has-image');
+            deleteFlag.value = "true";
+        });
+    }
+</script>
+
+
+
 <script type='module' src="{% static inventory_js %}"></script>
 <script type='module' src="{% static global_inline_modal_inventory_config_js %}"></script>
 <script type='module' src="{% static global_search_modal_inventory_config_js %}"></script>

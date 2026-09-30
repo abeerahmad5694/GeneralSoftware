@@ -47,15 +47,47 @@ def create_default_data(sender, **kwargs):
         {'name': 'View Daybook', 'code': 'view_daybook', 'module': 'reports'},
         {'name': 'View Comprehensive Sale', 'code': 'view_comprehensive_sale', 'module': 'reports'},
         {'name': 'View Quotation Book', 'code': 'view_quotation_book', 'module': 'reports'},
-        {'name': 'View And Update Inventory', 'code': 'view_and_update_inventory', 'module': 'reports'},
+        {'name': 'View And Update Inventory in Bulk', 'code': 'view_and_update_inventory_bulk', 'module': 'reports'},
+        {'name': 'View And Update Stock Update', 'code': 'stock_update', 'module': 'reports'},
     ]
 
-    if Permission.objects.exists():
-        print(f" - Permissions: Already exists ({Permission.objects.count()}), skipping creation.")
-    else:
-        for p_data in default_permissions:
-            Permission.objects.get_or_create(code=p_data['code'], defaults=p_data)
-        print(f" - Permissions: Created {len(default_permissions)} permissions.")
+    # if Permission.objects.exists():
+    #     print(f" - Permissions: Already exists ({Permission.objects.count()}), skipping creation.")
+    # else:
+    #     for p_data in default_permissions:
+    #         Permission.objects.get_or_create(code=p_data['code'], defaults=p_data)
+    #     print(f" - Permissions: Created {len(default_permissions)} permissions.")
+
+        
+    created_count = 0
+    existing_count = 0
+
+    for p_data in default_permissions:
+
+        permission, created = Permission.objects.get_or_create(
+            code=p_data['code'],
+            defaults={
+                'name': p_data['name'],
+                'module': p_data['module'],
+            }
+        )
+
+        if created:
+            created_count += 1
+            print(f"   + Permission created: {p_data['code']}")
+        else:
+            existing_count += 1
+            print(f"   - Permission exists: {p_data['code']}")
+
+    print(
+        f" - Permissions: {created_count} created, "
+        f"{existing_count} already existed."
+    )
+
+
+
+
+
 
     # ---------------------------------------------------------
     # 2. Company / Branch / Terminal / Config - create ONLY if empty

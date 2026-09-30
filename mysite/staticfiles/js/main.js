@@ -76,18 +76,18 @@ document.querySelectorAll('.nav-item:not(button)').forEach(item => {
 
 // ── Keyboard shortcut for search ──
 document.addEventListener('keydown', function (e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        const input = document.querySelector('.sb-search input');
-        const sb = document.getElementById('sidebar');
-        // On mobile, open sidebar first
-        if (window.innerWidth < 769 && sb) {
-            sb.classList.add('mobile-open');
-            const ov = document.getElementById('mobileOverlay');
-            if (ov) ov.classList.add('active');
-        }
-        if (input) setTimeout(() => input.focus(), 100);
-    }
+    // if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    //     e.preventDefault();
+    //     const input = document.querySelector('.sb-search input');
+    //     const sb = document.getElementById('sidebar');
+    //     // On mobile, open sidebar first
+    //     if (window.innerWidth < 769 && sb) {
+    //         sb.classList.add('mobile-open');
+    //         const ov = document.getElementById('mobileOverlay');
+    //         if (ov) ov.classList.add('active');
+    //     }
+    //     if (input) setTimeout(() => input.focus(), 100);
+    // }
     if (e.key === 'Escape') {
         closeThemePanel();
     }

@@ -6,14 +6,14 @@ import {
   loadBillIntoCart,
   startNewBill,
   renderCart,
-  refreshCartUI
+  refreshCartUI,
 } from "./cart.js";
 import { saveBillOffline } from "./indexdb_crud.js";
 import {
   getCookie,
   showToast,
   resetUI,
-  handlePaymentModeChange
+  handlePaymentModeChange,
 } from "./helper_func.js";
 import {
   hidden_bill_no,
@@ -47,7 +47,7 @@ let edit_cart = [];
 let Edit_mode = false;
 let Edit_voucher_no = null;
 
-let offline_bill_no = 10000
+let offline_bill_no = 10000;
 // Payment Mode helper mapping Cash=1, Bank=2, Dual=3 for standard Django Invoice CheckConstraints
 function mapPaymentMode(val) {
   if (val === "cash") return 1;
@@ -73,9 +73,10 @@ async function save_bill(e) {
   const salesManVal = salesMan.value;
 
   // Enforce require_remarks setting
-  const requireRemarks = window.companyConfigurations?.pos?.require_remarks === true;
+  const requireRemarks =
+    window.companyConfigurations?.pos?.require_remarks === true;
   if (requireRemarks && !remarks.trim()) {
-    showToast('⚠️ Remarks are required before saving the bill', 'error');
+    showToast("⚠️ Remarks are required before saving the bill", "error");
     remarksInput?.focus();
     return;
   }
@@ -83,7 +84,8 @@ async function save_bill(e) {
   const cart = getCart();
   if (!cart.length) return showToast("Cart is empty");
 
-  const acc_code = accCode.value || window.getDefaultAccount('cash_client_acc', 112000001);
+  const acc_code =
+    accCode.value || window.getDefaultAccount("cash_client_acc", 112000001);
 
   // Build payload using payload builder module
   const payload = buildBillPayload({
@@ -123,53 +125,77 @@ async function save_bill(e) {
   // return
 
   try {
-    const isOnlineSoftware = window.companyConfigurations?.general?.online_software !== false;
-    if ((!isOnlineSoftware || navigator.onLine ) && true ) {
-      const res = await fetch(window.app_constants.save_sale_bills_api || '/sale/api/save_bills/', {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": getCookie("csrftoken"),
-          "Content-Type": "application/json",
+    const isOnlineSoftware =
+      window.companyConfigurations?.general?.online_software !== false;
+    if ((!isOnlineSoftware || navigator.onLine) && true) {
+      const res = await fetch(
+        window.app_constants.save_sale_bills_api || "/sale/api/save_bills/",
+        {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
       const data = await res.json();
       if (!data.success) {
-        showToast(`❌ ${data.message || "Error saving bill"}`, 'error');
+        showToast(`❌ ${data.message || "Error saving bill"}`, "error");
         return;
       }
       lastBillAmount.textContent = `Last Bill Amount = ${payload.header_net_total.toFixed(3)}`;
       // lastBillAmount.textContent = `Last Bill Amount = 0000.00`;
 
-      const copies = window.companyConfigurations?.general?.multiple_bill_prints || 1;
+      const copies =
+        window.companyConfigurations?.general?.multiple_bill_prints || 1;
 
-      window.DocumentPrinter.printDocument({
-        bill_no: data.header_voucher_no,
-        model_name: 'Invoice',
-        page_type: window.companyConfigurations?.pos?.default_page_size || "thermal_80",
-        document_type: "pos_invoice",
-        data_source: "server",           // "local" | "server"
-        payload: null,                 // required when data_source === "local"
-        allow_multiple_print: true,
-        copies: copies,
-        directprint: directPrinting.checked,               // Set to true to print directly without showing preview modal
+      
+      
+      // console.log('data.....' ,data)
+      
+      await window.DocumentPrinter.printDocument({
+            bill_no: data.header_voucher_no,
+            model_name: "Invoice",
+            page_type: window.companyConfigurations?.pos?.default_page_size || "thermal_80",
+            document_type: "pos_invoice",
+            data_source: "server",
+            renderSource: "server",
+            payload: payload,
+            allow_multiple_print: true,
+            copies: copies,
+            directprint: directPrinting.checked,
       });
 
     } else {
       offline_bill_no += 1;
-      const copies = window.companyConfigurations?.general?.multiple_bill_prints || 1;
+      const copies =
+      window.companyConfigurations?.general?.multiple_bill_prints || 1;
 
-      await window.DocumentPrinter.printDocument({
-        bill_no: offline_bill_no,
-        model_name: 'Invoice',
-        page_type: window.companyConfigurations?.pos?.default_page_size || "thermal_80",
-        document_type: "pos_invoice",
-        data_source: "local",           // "local" | "server"
-        payload: payload,                 // required when data_source === "local"
-        allow_multiple_print: true,
-        copies: copies,
-        directprint: directPrinting.checked,               // Set to true to print directly without showing preview modal
+      await window.DocumentPrinter.printDocument({  
+              bill_no: hidden_bill_no.value || offline_bill_no,
+              model_name: "Invoice",
+              page_type: window.companyConfigurations?.pos?.default_page_size || "thermal_80",
+              document_type: "pos_invoice",
+              data_source: "local",
+              renderSource: "local",
+              payload: null,
+              allow_multiple_print: true,
+              copies: copies,
+              directprint: directPrinting.checked,
       });
+      // await window.DocumentPrinter.printDocument({
+      //   bill_no: offline_bill_no,
+      //   model_name: "Invoice",
+      //   page_type:
+      //     window.companyConfigurations?.pos?.default_page_size || "thermal_80",
+      //   document_type: "pos_invoice",
+      //   data_source: "local", // "local" | "server"
+      //   payload: payload, // required when data_source === "local"
+      //   allow_multiple_print: true,
+      //   copies: copies,
+      //   directprint: directPrinting.checked, // Set to true to print directly without showing preview modal
+      // });
       throw new Error("Offline mode");
     }
   } catch (err) {
@@ -178,9 +204,45 @@ async function save_bill(e) {
     showToast("Offline: Bill saved locally. It will sync when online.");
     lastBillAmount.textContent = `Last Bill Amount = ${payload.header_net_total.toFixed(3)}`;
     resetUI();
+
+    try {
+      offline_bill_no += 1;
+      const copies =
+        window.companyConfigurations?.general?.multiple_bill_prints || 1;
+
+
+      await window.DocumentPrinter.printDocument({
+              bill_no: hidden_bill_no.value || offline_bill_no,
+              model_name: "Invoice",
+              page_type: window.companyConfigurations?.pos?.default_page_size || "thermal_80",
+              document_type: "pos_invoice",
+              data_source: "local",
+              renderSource: "local",
+              payload: payload,
+              allow_multiple_print: true,
+              copies: copies,
+              directprint: directPrinting.checked,
+      });
+
+      // await window.DocumentPrinter.printDocument({
+      //   bill_no: offline_bill_no,
+      //   model_name: "Invoice",
+      //   page_type:
+      //     window.companyConfigurations?.pos?.default_page_size || "thermal_80",
+      //   document_type: "pos_invoice",
+      //   data_source: "local", // "local" | "server"
+      //   payload: payload, // required when data_source === "local"
+      //   allow_multiple_print: true,
+      //   copies: copies,
+      //   directprint: directPrinting.checked, // Set to true to print directly without showing preview modal
+      // });
+
+    } catch (err) {
+      console.log(err);
+    }
+
+    // throw new Error("Offline mode");
   }
-
-
 
   Edit_mode = false;
   Edit_voucher_no = null;
@@ -202,13 +264,12 @@ function New_bill(e) {
   if (cardNumber) cardNumber.value = "";
   paymentMode.value = "cash";
   searchInput.value = "";
-  if (lastBillAmount.textContent.startsWith('Client')) {
-    lastBillAmount.innerHTML = 'Last Bill Amount = ' + 0;
+  if (lastBillAmount.textContent.startsWith("Client")) {
+    lastBillAmount.innerHTML = "Last Bill Amount = " + 0;
   }
 
-
-  if (headerQuoConBy) headerQuoConBy.value = '';
-  if (headerQuoConNo) headerQuoConNo.value = '';
+  if (headerQuoConBy) headerQuoConBy.value = "";
+  if (headerQuoConNo) headerQuoConNo.value = "";
 
   startNewBill();
 }
@@ -222,10 +283,11 @@ function old_inv_print_view(e) {
 
     window.DocumentPrinter.printDocument({
       bill_no: query,
-      model_name: 'Invoice',
-      page_type: window.companyConfigurations?.pos?.default_page_size || "thermal_80",
+      model_name: "Invoice",
+      page_type:
+        window.companyConfigurations?.pos?.default_page_size || "thermal_80",
       document_type: "pos_invoice",
-      data_source: "server",           // "local" | "server"
+      data_source: "server", // "local" | "server"
       // payload: payload,                 // required when data_source === "local"
       allow_multiple_print: true,
       copies: 1,
@@ -253,15 +315,25 @@ function load_prv_bill(load_old_bill = true) {
   }
 }
 
-async function fetchBill(voucherNo = null, load_old_bill = false, convertIntoBill = 0) {
+async function fetchBill(
+  voucherNo = null,
+  load_old_bill = false,
+  convertIntoBill = 0,
+) {
   let url;
   if (convertIntoBill && convertIntoBill > 0) {
     url = voucherNo
-      ? window.app_constants.get_quotation_bill_api ? window.app_constants.get_quotation_bill_api + `${encodeURIComponent(voucherNo)}` : `/quotation/api/fetch_bill/${encodeURIComponent(voucherNo)}/`
+      ? window.app_constants.get_quotation_bill_api
+        ? window.app_constants.get_quotation_bill_api +
+          `${encodeURIComponent(voucherNo)}`
+        : `/quotation/api/fetch_bill/${encodeURIComponent(voucherNo)}/`
       : window.app_constants.get_quotation_bill_api;
   } else {
     url = voucherNo
-      ? window.app_constants.get_sale_bill_api ? window.app_constants.get_sale_bill_api + `${encodeURIComponent(voucherNo)}` : `/sale/api/get_bill/${encodeURIComponent(voucherNo)}/`
+      ? window.app_constants.get_sale_bill_api
+        ? window.app_constants.get_sale_bill_api +
+          `${encodeURIComponent(voucherNo)}`
+        : `/sale/api/get_bill/${encodeURIComponent(voucherNo)}/`
       : window.app_constants.get_sale_bill_api;
   }
   // console.log('caled fecthc', url);
@@ -278,43 +350,46 @@ async function fetchBill(voucherNo = null, load_old_bill = false, convertIntoBil
     }
 
     if (load_old_bill) {
-      console.log(data.data)
+      console.log(data.data);
       await loadBillIntoCart(data.data);
-
-
-
 
       const bill = data.data;
       if (bill.header_payment_mode == 1) {
-        paymentMode.value = 'cash';
+        paymentMode.value = "cash";
         receivedAmount.value = bill.header_total_paid || 0;
       } else if (bill.header_payment_mode == 2) {
-        paymentMode.value = 'card';
+        paymentMode.value = "card";
         receivedAmount.value = bill.header_total_paid || 0;
       } else if (bill.header_payment_mode == 3) {
-        paymentMode.value = 'dual';
+        paymentMode.value = "dual";
         receivedAmount.value = bill.header_cash_paid || 0;
         changeAmount.value = bill.header_card_paid || 0;
       }
       handlePaymentModeChange();
-      if (cardNumber) cardNumber.value = bill.header_card_last4 ? `*******${bill.header_card_last4}` : "";
+      if (cardNumber)
+        cardNumber.value = bill.header_card_last4
+          ? `*******${bill.header_card_last4}`
+          : "";
 
-      if (bill.header_acc_code !== 112000001) lastBillAmount.innerHTML = 'Account Code: ' + bill.header_acc_code;
+      if (bill.header_acc_code !== 112000001)
+        lastBillAmount.innerHTML = "Account Code: " + bill.header_acc_code;
 
       discountInput.value = bill.header_discount_percent || 0;
       deliveryCharges.value = bill.header_delivery_charges || 0;
-      if (bill.header_msc_charges) mscChargesInput.value = bill.header_msc_charges;
-      if (bill.header_gst_percent) taxPercentInput.value = bill.header_gst_percent;
+      if (bill.header_msc_charges)
+        mscChargesInput.value = bill.header_msc_charges;
+      if (bill.header_gst_percent)
+        taxPercentInput.value = bill.header_gst_percent;
       remarksInput.value = bill.header_remarks || "";
-      if (hidden_bill_no && convertIntoBill <= 0) hidden_bill_no.value = bill.bill_no;
+      if (hidden_bill_no && convertIntoBill <= 0)
+        hidden_bill_no.value = bill.bill_no;
 
       if (convertIntoBill && convertIntoBill > 0) {
-
         if (bill.user) headerQuoConBy.value = bill.user;
         if (bill.bill_no) headerQuoConNo.value = bill.bill_no;
       }
 
-      console.log('called header', headerQuoConBy.value, headerQuoConNo.value)
+      console.log("called header", headerQuoConBy.value, headerQuoConNo.value);
 
       Edit_mode = true;
       Edit_voucher_no = bill.voucher_no || bill.bill_no;
@@ -331,34 +406,29 @@ async function fetchBill(voucherNo = null, load_old_bill = false, convertIntoBil
   }
 }
 
+export async function deleteBill(bill_no, pur_inv) {
+  if (!bill_no) return alert("No bill to delete", "error");
+  if (!pur_inv) return alert("No purchase invoice to delete", "error");
+  if (confirm("Are you sure you want to delete this bill?")) {
+    try {
+      const res = await fetch(
+        window.app_constants.delete_sale_bill_api
+          ? window.app_constants.delete_sale_bill_api +
+              `${encodeURIComponent(pur_inv)}` +
+              `${encodeURIComponent(bill_no)}`
+          : `/sale/api/delete_sale_bill/${encodeURIComponent(pur_inv)}/${encodeURIComponent(bill_no)}/`,
+      );
+      if (!res.ok) return alert("Network error deleting bildl", "error");
+      const data = await res.json();
+      if (!data.success) return alert(data.message);
+      alert(data.message, "success");
 
-
-
-
-export async function deleteBill(bill_no,pur_inv){
-  if(!bill_no) return alert("No bill to delete", "error");
-  if(!pur_inv) return alert("No purchase invoice to delete", "error");
-    if (confirm("Are you sure you want to delete this bill?")) {
-      try {
-        
-        const res = await fetch(window.app_constants.delete_sale_bill_api ? window.app_constants.delete_sale_bill_api + `${encodeURIComponent(pur_inv)}` + `${encodeURIComponent(bill_no)}` : `/sale/api/delete_sale_bill/${encodeURIComponent(pur_inv)}/${encodeURIComponent(bill_no)}/`);
-        if (!res.ok) return alert("Network error deleting bildl", "error");
-        const data = await res.json();
-        if (!data.success) return alert(data.message);
-        alert(data.message, "success");
-
-        New_bill();
-      } catch (e) {
-        alert(e.message, "error");
-      }
+      New_bill();
+    } catch (e) {
+      alert(e.message, "error");
     }
+  }
 }
-
-
-
-
-
-
 
 function buildReceiptData(payload = {}, offline = false, serverData = {}) {
   const items = offline ? payload.items || [] : serverData.items || [];
@@ -416,7 +486,11 @@ function buildReceiptData(payload = {}, offline = false, serverData = {}) {
   };
 }
 
-function calculateTotals(items = [], discountPercent = 0, deliveryChargesVal = 0) {
+function calculateTotals(
+  items = [],
+  discountPercent = 0,
+  deliveryChargesVal = 0,
+) {
   const total = items.reduce((sum, i) => sum + (i.amount || 0), 0);
   const discount = Number(total * (discountPercent / 100));
   const net_total = total - discount + deliveryChargesVal;

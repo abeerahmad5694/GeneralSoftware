@@ -46,6 +46,7 @@ window.DocumentPrinter = (function () {
         // Map item fields from POS payload shape -> document_data shape
         const items = (payload.items || []).map(i => ({
             product_name:     i.prod_name || i.product_name || "",
+            product_name_ur:  i.prod_name_ur || i.product_name_ur || "",
             category:         i.category || "",
             quantity:         i.qty !== undefined ? i.qty : (i.quantity !== undefined ? i.quantity : ""),
             unit:             i.uom || i.unit || "",

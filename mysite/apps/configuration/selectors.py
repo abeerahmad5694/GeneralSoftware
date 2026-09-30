@@ -71,6 +71,8 @@ DEFAULT_ACCOUNTS_DATA = {
 
     'default_cash_acc': 110000001,
     'default_bank_acc': 111000001,
+    'default_opening_stock': 231000001,
+
     # 'petty_cash_acc': 110000002,
     'ar_control_parent': 112,
     'ap_control_parent': 231,

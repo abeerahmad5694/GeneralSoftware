@@ -62,6 +62,13 @@ class Unit(models.Model):
 
 
 
+def product_image_path(instance, filename):
+    ext = filename.split('.')[-1].lower()
+    # company/branch sharding to avoid 10k files in one folder
+    return f"items/{instance.company_id}/{instance.branch_id}/{instance.inv_id}.{ext}"
+
+
+
 class Inventory(models.Model):
     company = models.ForeignKey('configuration.Company', on_delete=models.CASCADE, default=None)
     branch = models.ForeignKey('configuration.Branch', on_delete=models.CASCADE, default=None)
@@ -75,6 +82,18 @@ class Inventory(models.Model):
         help_text="آئٹم کا اردو نام — Nastaleeq font will be used in Urdu/Bilingual invoices.",
     )
     alias_name = models.CharField(max_length=255, null=True, blank=True, default=None)
+
+    # prod_picture = models.ImageField(upload_to='item_list/images/', null=True, blank=True, default=None)
+
+
+    prod_picture = models.ImageField(upload_to=product_image_path, null=True, blank=True, max_length=500)
+    prod_picture_thumb = models.ImageField(upload_to=product_image_path, null=True, blank=True, max_length=500,
+                                           help_text="Auto generated 150x150 webp")
+    image_updated_at = models.DateTimeField(null=True, blank=True)
+
+
+
+
 
     ws_price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, default=None)
     ws_disc_per = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, default=None)

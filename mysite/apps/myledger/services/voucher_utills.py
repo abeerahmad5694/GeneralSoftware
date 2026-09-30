@@ -65,7 +65,7 @@ def create_gledg_entries(
 
 
     if update and not vno_to_update:
-        return False, "Voucher not found"
+        return False, "Voucher not found" ,0
     
         
     # if update and not user_perms.filter(code="edit_payments").exists():
@@ -93,13 +93,13 @@ def create_gledg_entries(
         ).first() or {}
         print('Gledg to Update ',gledg_to_update.get("INVOICE_ID"))
         if not called_by_invoices and gledg_to_update.get("INVOICE_ID") and gledg_to_update.get("INVOICE_ID")>0:
-            return False, f'This Voucher Is Created From Invoice/Purhcase# {gledg_to_update.get("INVOICE_ID")} So Update From Invoice/Purchase.'
+            return False, f'This Voucher Is Created From Invoice/Purhcase# {gledg_to_update.get("INVOICE_ID")} So Update From Invoice/Purchase.',vno_to_update
 
 
     
 
     if not gledg_to_update and update:
-        return False , "Voucher not found"
+        return False , "Voucher not found",0
 
     if update:
         fixed_filters = {

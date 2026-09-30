@@ -99,8 +99,12 @@
                         <a href="{% url 'stock_report' %}">Stock Report</a>
                         {% endif %}
                         
-                        {% if 'view_and_update_inventory' in user_perm_codes %}
+                        {% if 'view_and_update_inventory_bulk' in user_perm_codes %}
                         <a href="{% url 'inventory_update' %}">Bulk Inventory Update</a>
+                        {% endif %}
+
+                        {% if 'stock_update' in user_perm_codes %}
+                        <a href="{% url 'stock_audit' %}">Stock Audit / Adjustments</a>
                         {% endif %}
                         <!-- <a href="#">Warehouse</a>
                         <a href="#">Transfers</a> -->
@@ -126,6 +130,8 @@
 
 
 
+                 {% if 'create_quotation' in user_perm_codes or 'view_own_quotation' in user_perm_codes %}
+
                 <div class="sub-parent">
                     <button onclick="toggleSub(this)" class="nav-item" data-tip="Quotation">
                         <span class="nav-icon"><i class="fa-solid fa-cart-shopping"></i></span>
@@ -140,6 +146,8 @@
 
                     </div>
                 </div>
+
+                {% endif %}
 
 
 
@@ -267,9 +275,14 @@
                     <div class="submenu">
                         <a href="{% url 'quick_accounts' %}">Quick Account</a>
                         <a href="{% url 'chart_of_accounts' %}">Advance Accounts</a>
-                        <a href="{% url 'accounts_receivable' %}">Receivable Statement</a>
-                        <a href="{% url 'accounts_payable' %}">Payable Statement</a>
 
+                        {% if 'see_receivables_statements' in user_perm_codes %}
+                        <a href="{% url 'accounts_receivable' %}">Receivable Statement</a>
+
+                        {% endif %}
+                        {% if 'see_payable_statements' in user_perm_codes %}
+                        <a href="{% url 'accounts_payable' %}">Payable Statement</a>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}
@@ -336,7 +349,7 @@
 
 
                     <!-- In your Settings > Company Policies page -->
-                    <button onclick="openLicenseModal()" class="sb-label ml-auto text-[var(--text-sidebar)] hover:text-[var(--text-sidebar-active)] cursor-pointer flex-shrink-0
+                    <button onclick="openLicenseModal()" class="hidden sb-label ml-auto text-[var(--text-sidebar)] hover:text-[var(--text-sidebar-active)] cursor-pointer flex-shrink-0
                         style=" color:white;">
                         <i class="fa-solid fa-key mr-1.5"></i>
                     </button>
@@ -418,53 +431,6 @@
         <script>
             (function () {
 
-                // 1. Check if already ran in this session
-                if (sessionStorage.getItem('inventory_reloaded')) {
-                    return; // already done for this session
-                }
-
-                function runInBackground() {
-                    if (window.IndexDBConfig && typeof window.IndexDBConfig.reload_inventory === 'function') {
-                        try {
-                            console.log("[IndexDB] Background reload started...");
-                            // use null instead of 'this' - 'this' will be window in background
-                            Promise.resolve(window.IndexDBConfig.reload_inventory()).catch(() => { }).finally(() => {
-                                // mark done even if fails, so it doesn't retry every page
-                                sessionStorage.setItem('inventory_reloaded', '1');
-                            });
-                        } catch (e) {
-                            console.warn("IndexDB reload failed", e);
-                            sessionStorage.setItem('inventory_reloaded', '1');
-                        }
-                    }
-                }
-
-                function schedule() {
-                    // Run when browser is idle, not blocking load
-                    if ('requestIdleCallback' in window) {
-                        requestIdleCallback(runInBackground, { timeout: 3000 });
-                    } else {
-                        // fallback - run 1 sec after load
-                        setTimeout(runInBackground, 1000);
-                    }
-                }
-
-                // Wait for full page load, then schedule background task
-                if (document.readyState === 'complete') {
-                    schedule();
-                } else {
-                    window.addEventListener('load', schedule);
-                }
-
-
-
-
-
-
-
-
-
-
 
                 // ── Build navigation index from the DOM ───────────────────
                 // Runs after defer scripts, so the nav is fully rendered.
@@ -510,9 +476,11 @@
                 if (!input || !dropdown) return;
 
                 // Init index once after page is ready
-                document.addEventListener('DOMContentLoaded', () => {
+                {% comment %} document.addEventListener('DOMContentLoaded', () => {
                     navIndex = buildNavIndex();
-                });
+                }); {% endcomment %}
+                navIndex = buildNavIndex();
+
 
                 // ── Sidebar expand/collapse helpers ─────────────────────
                 const sidebar = document.getElementById('sidebar');
@@ -689,6 +657,71 @@
                     }, 180);
                 });
 
+            })();
+        </script>
+        
+        <script src="{% static 'invoice_designer/js/offline_template_engine.js' %}?v=2"></script>
+        
+        <script>
+            (
+                function(){
+                // 1. Check if already ran in this session
+                    if (sessionStorage.getItem('inventory_reloaded')) {
+                        return; // already done for this session
+                    }
+
+                    function runInBackground() {
+                        if (window.IndexDBConfig && typeof window.IndexDBConfig.reload_inventory === 'function') {
+                            try {
+                                console.log("[IndexDB] Background reload started...");
+                                // use null instead of 'this' - 'this' will be window in background
+                                Promise.resolve(window.IndexDBConfig.reload_inventory()).catch(() => { }).finally(() => {
+                                    // mark done even if fails, so it doesn't retry every page
+                                    sessionStorage.setItem('inventory_reloaded', '1');
+                                });
+                            } catch (e) {
+                                console.warn("IndexDB reload failed", e);
+                                sessionStorage.setItem('inventory_reloaded', '1');
+                            }
+                        }
+                    }
+
+                    const TEMPLATE_PRELOAD_KEY = 'template_configs_preloaded';
+                    async function runTemplatePreload() {
+                        if (sessionStorage.getItem(TEMPLATE_PRELOAD_KEY)) return;
+                        if (!navigator.onLine) return;
+                        if (!window.OfflineTemplateEngine || typeof window.OfflineTemplateEngine.preloadOfflineRenderData !== 'function') return;
+
+                        try {
+                            console.log("[OTE] Background preload started...");
+                            await window.OfflineTemplateEngine.preloadOfflineRenderData();
+                            sessionStorage.setItem(TEMPLATE_PRELOAD_KEY, '1');
+                        } catch(e) {
+                            console.warn("[OTE] Template preload failed:", e);
+                        }
+                    }
+
+                    function schedule() {
+                        // Run when browser is idle, not blocking load
+                        if ('requestIdleCallback' in window) {
+                            requestIdleCallback(runInBackground, { timeout: 3000 });
+                            requestIdleCallback(runTemplatePreload, { timeout: 5000 });
+                        } else {
+                            // fallback - run 1 sec after load
+                            setTimeout(runInBackground, 1000);
+                            setTimeout(runTemplatePreload, 2000);
+                        }
+                    }
+
+                    // Wait for full page load, then schedule background task
+                    if (document.readyState === 'complete') {
+                        schedule();
+                    } else {
+                        window.addEventListener('load', schedule);
+                    }
+
+                    
+            
             })();
         </script>
     </body>

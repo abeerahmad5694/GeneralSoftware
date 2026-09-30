@@ -346,4 +346,5 @@ const GlobalInlineModal = {
 //     GlobalInlineModal.close();
 // });
 
+window.GlobalInlineModal = GlobalInlineModal;
 export default GlobalInlineModal;

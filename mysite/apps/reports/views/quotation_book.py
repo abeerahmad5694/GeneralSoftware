@@ -122,7 +122,7 @@ def get_quotation_book_data(date_from, date_to, search_query=""):
 
 @csrf_exempt
 def quotation_book(request):
-    can_view, message = get_user_perms(request, 'see_reports')
+    can_view, message = get_user_perms(request, 'view_own_quotation')
     if not can_view:
         return redirect('page_not_found')
     user = request.user

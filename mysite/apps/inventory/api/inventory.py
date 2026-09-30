@@ -26,19 +26,19 @@ def save_update_inventory(request):
             # print('old id exist')
             old_inv_obj = Inventory.objects.get(company=company, branch=branch, inv_id=old_inv_id)
             # print(old_inv_obj, '___________________________',old_inv_id)
-            form = InventoryForm(request.POST, instance=old_inv_obj)
+            form = InventoryForm(request.POST, request.FILES, instance=old_inv_obj)
             message = 'Updated successfully!'
         except Inventory.DoesNotExist:
             has_permission, message = get_user_perms(request, 'add_item')
             if not has_permission:
                 return JsonResponse({'success': False, 'error': message}, status=403)
-            form = InventoryForm(request.POST)
+            form = InventoryForm(request.POST, request.FILES)
             message = 'Created successfully!'
     else:
         has_permission, message = get_user_perms(request, 'add_item')
         if not has_permission:
             return JsonResponse({'success': False, 'error': message}, status=403)
-        form = InventoryForm(request.POST)
+        form = InventoryForm(request.POST, request.FILES)
         message = 'Created successfully!'
         
     if form.is_valid():
@@ -55,7 +55,26 @@ def save_update_inventory(request):
                 else:
                     instance.updated_by = request.user.username if request.user.is_authenticated else 'system'
                     
+                has_new_image = 'prod_picture' in request.FILES
+                delete_image = request.POST.get('delete_image') == 'true'
+
+                if delete_image and not has_new_image:
+                    instance.prod_picture.delete(save=False)
+                    instance.prod_picture_thumb.delete(save=False)
+                    instance.image_updated_at = None
+
                 instance.save()
+                
+                if has_new_image:
+                    from apps.inventory.services.image_service import process_product_image
+                    try:
+                        from django.utils import timezone
+                        process_product_image(instance)
+                        instance.image_updated_at = timezone.now()
+                        instance.save(update_fields=['prod_picture','prod_picture_thumb','image_updated_at'])
+                    except Exception as img_err:
+                        print("Error processing image in API:", img_err)
+
                 form.save_m2m()
                 
                 # Serialize form fields for UI response
@@ -68,6 +87,12 @@ def save_update_inventory(request):
                         data[field.name] = field.value().strftime('%Y-%m-%d')
                     else:
                         data[field.name] = field.value()
+                        
+                # Add image URLs
+                data['prod_picture_url'] = instance.prod_picture.url if instance.prod_picture else None
+                data['prod_picture_thumb_url'] = instance.prod_picture_thumb.url if getattr(instance, 'prod_picture_thumb', None) and instance.prod_picture_thumb else None
+                data['prod_picture'] = None
+                data['prod_picture_thumb'] = None
                         
                 # Serialize DB record for IndexedDB (annotate FK display names for UOM and category)
                 db_record = Inventory.objects.filter(pk=instance.pk).annotate(

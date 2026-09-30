@@ -34,6 +34,11 @@ from apps.myledger.services.helpers import get_user_perms
 
 @validate_license
 def sale_page(request):
+
+    # from apps.inventory.services.image_service import cleanup_old_duplicates
+    # cleanup_old_duplicates(1,1)
+
+
     can_create, message = get_user_perms(request, 'create_invoice')
     if not can_create:
         return redirect('page_not_found')
