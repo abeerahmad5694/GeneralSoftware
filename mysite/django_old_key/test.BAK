@@ -1,0 +1,177 @@
+SET TALK OFF
+CLOSE DATABASES
+
+*key_gen
+*company
+*SELECT a.extend_dat,b.cname FROM key_gen a,company b WHERE a.cid=b.cid ORDER BY extend_dat desc
+*SET ENGINEBEHAVIOR 70
+SELECT TOP 1 extend_dat FROM key_gen ORDER BY extend_date DESC 
+
+RETURN
+SET LIBRARY TO MD5.FLL
+*id = 2002
+*date = 01-01-06
+zVal = "06606Z6Z68"
+REPLACE vxr with substr(MD5HASH(zVal),1,10)
+RETURN
+
+DIMENSION str_encode(20)
+DIMENSION dim(26)
+char_set = 65
+FOR nItem = 1 TO 26
+  dim[nItem] = CHR(char_set)
+  char_set = char_set + 1
+ENDFOR
+
+xval = "ZAHEER"
+
+j=1
+for i = 1 to 20 step 1
+	str_encode[i]= substr(xval,j,1)
+	i = i + 1
+	j=j+1
+	str_encode[i] = dim[ROUND(26 * RAND( ),00)]
+endfo
+clear
+for i = 1 to 20
+	? str_encode[i]
+endfo
+
+return
+
+? GETENV("SystemRoot")
+? GETENV("windir")
+
+
+CLEAR ALL
+CLEAR MEMORY
+CLOSE ALL
+
+DIMENSION dim(26)
+*=RAND(-1)
+CLEAR
+char_set = 65
+FOR nItem = 1 TO 26
+  dim[nItem] = CHR(char_set)
+  char_set = char_set + 1
+ENDFOR
+
+*FOR i=1 TO 26 STEP 1
+	? dim[ROUND(26 * RAND( ),00)]
+*ENDFOR
+
+RETURN
+
+CLEAR
+CLOSE DATABASE
+Public xDbfName, xFldName
+current_dir = SYS(5)+SYS(2003)
+set library to MD5.FLL
+*COPY FILE client.dll TO clientserve.dbf
+*DO hidefields WITH current_dir+"\clientserve.dbf","SHOW"
+
+USE clientserve.dbf
+DO EncryptFld with "12345","67890","12345","67890","12345"
+BROWSE
+zaheer=DecryptFld("v1","bv","zf","ep","mq")
+WAIT WINDOW zaheer
+
+RETURN
+
+CLOSE DATABASE
+DO hidefields WITH current_dir+"\clientserve.dbf","HIDE"
+ERASE client.dll
+RENAME clientserve.dbf TO client.dll
+
+RETURN
+
+
+************************************
+*** Procedure EncrypFld
+************************************
+PROCEDURE EncryptFld
+PARAMETERS xVal1,xVal2,xVal3,xVal4,xVal5
+
+vxVal = SPACE(6)
+*SELECT &xDbfName
+
+vxVal = CHRTRAN(xVal1,;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ",;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH")
+
+WAIT WINDOW vxVal
+Replace v1 with SUBSTR(MD5HASH(ALLTRIM(vxVal)),1,5)
+
+
+*****************************************
+*Decrypt
+
+zVal = CHRTRAN(vxVal,;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH",;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ")
+
+WAIT WINDOW "Decrypt Value :"+zVal
+
+IF v1 = SUBSTR(MD5HASH(ALLTRIM(vxVal)),1,5) 
+	WAIT WINDOW "Match"
+ELSE
+	WAIT WINDOW "No Match"
+ENDIF
+**********************************************
+
+vxVal = CHRTRAN(xVal2,;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ",;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH")
+replace  bv WITH ALLTRIM(vxVal)
+
+vxVal = CHRTRAN(xVal3,;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ",;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH")
+replace  zf WITH ALLTRIM(vxVal)
+
+vxVal = CHRTRAN(xVal4,;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ",;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH")
+replace  ep WITH ALLTRIM(vxVal)
+
+vxVal = CHRTRAN(xVal5,;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ",;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH")
+replace  mq WITH ALLTRIM(vxVal)
+ENDPROC
+
+***************************************************************
+**** Procedure DecryptFld
+***************************************************************
+PROCEDURE DecryptFld
+PARAMETERS zVal1,zVal2,zVal3,zVal4,zVal5
+
+GO top
+
+*Replace v1 with SUBSTR(MD5HASH(ALLTRIM(vxVal)),1,5)
+
+zVal = CHRTRAN(&zVal1,;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH",;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ")
+
+zVal = zVal + CHRTRAN(&zVal2,;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH",;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ")
+
+zVal = zVal + CHRTRAN(&zVal3,;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH",;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ")
+
+zVal = zVal + CHRTRAN(&zVal4,;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH",;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ")
+
+zVal = zVal + CHRTRAN(&zVal5,;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH",;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ")
+
+*WAIT WINDOW zVal
+RETURN zVal
+ENDPROC
+
+ 

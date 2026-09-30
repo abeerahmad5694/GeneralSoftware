@@ -1,0 +1,79 @@
+
+*Public xDbfName, xFldName
+
+xDbfName = "users" && \\ Insert Your Table Name Here
+USE &xDbfName SHARED AGAIN IN 0
+
+xFldName = "cfname"  && \\ Insert Your Field Name Here (without the Quotes)
+DO EncryptFld  && \\ Select this if you want to Encrypt!
+brow
+DO DecryptFld    && \\ Select this if you want to Decrypt!
+BROWSE
+
+PROCEDURE EncryptFld
+PARAMETERS xVal
+
+SELECT &xDbfName
+GO top
+ 
+DO WHILE !EOF()
+
+WAIT WINDOW 'Encrypting Record - '+ALLTRIM(STR(RECNO())) nowait
+
+
+xVal = CHRTRAN(&xFldName,;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ",;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH")
+
+xVal1 = CHRTRAN(&xFldName,"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ",CHR(11)+CHR(15)+CHR(20)+CHR(23) ;
++CHR(16)+CHR(17)+CHR(14)+CHR(25)+CHR(36)+CHR(64)+CHR(1)+CHR(8)+CHR(5)+CHR(3) ;
++CHR(4)+CHR(7)+CHR(33)+CHR(34)+CHR(126)+CHR(128)+CHR(161)+CHR(162)+CHR(163) ;
++CHR(164)+CHR(165)+CHR(166)+CHR(167)+CHR(168)+CHR(169)+CHR(170)+CHR(171) ;
++CHR(171)+CHR(172)+CHR(173)+CHR(174)+CHR(175)) && \\ Encrypt the Field Value
+
+replace &xFldName WITH ALLTRIM(xVal)
+
+SELECT &xDbfName
+	IF !EOF()
+		SKIP
+	ELSE
+		GO bottom
+	ENDIF
+ENDDO
+WAIT WINDOW 'Encryption Finished' NOWAIT
+ENDPROC
+
+PROCEDURE DecryptFld
+PARAMETERS zVal
+
+SELECT &xDbfName
+GO top
+ 
+DO WHILE !EOF()
+
+WAIT WINDOW 'Decrypting Record - '+ALLTRIM(STR(RECNO())) nowait
+
+zVal = CHRTRAN(&xFldName,;
+"Z0Y9X8W7V6U5T4X3R2Q1PAOBNCMDLEKFJGIH",;
+"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ")
+
+zVal1 = CHRTRAN(&xFldName,CHR(11)+CHR(15)+CHR(20)+CHR(23)+CHR(16)+CHR(17)+CHR(14) ;
++CHR(25)+CHR(36)+CHR(64)+CHR(1)+CHR(8)+CHR(5)+CHR(3)+CHR(4)+CHR(7) ;
++CHR(33)+CHR(34)+CHR(126)+CHR(128)+CHR(161)+CHR(162)+CHR(163) ;
++CHR(164)+CHR(165)+CHR(166)+CHR(167)+CHR(168)+CHR(169)+CHR(170)+CHR(171) ;
++CHR(171)+CHR(172)+CHR(173)+CHR(174)+CHR(175) ;
+,"1234567890ABCDEFGHIJKLMNOPQRXTUVWXYZ") && \\ Decrypt the Field Value
+
+replace &xFldName WITH ALLTRIM(zVal)
+
+SELECT &xDbfName
+	IF !EOF()
+		SKIP
+	ELSE
+		GO bottom
+	ENDIF
+ENDDO
+WAIT WINDOW 'Decryption Finished' NOWAIT
+ENDPROC
+
+ 

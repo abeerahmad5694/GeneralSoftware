@@ -1,0 +1,2 @@
+for /d %i in (apps\*) do mkdir %i\migrations form migrations folders
+for /d %i in (apps\*) do type nul > %i\migrations\__init__.py   for init files in migrations folders
