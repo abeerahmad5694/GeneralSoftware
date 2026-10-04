@@ -27,7 +27,7 @@ class InventoryForm(forms.ModelForm):
                     field.required = False
             except:
                 pass
-
+            active = forms.BooleanField(initial=True, required=False)
             # Basic styling for all fields
             field.widget.attrs.update({
                 'class': 'erp-input-field h-7 text-xs border border-[var(--border-color)] rounded px-2 bg-white text-[var(--text-main)] focus:outline-none focus:ring-1 focus:ring-[var(--color-primary)] transition w-full',

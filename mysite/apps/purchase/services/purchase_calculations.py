@@ -72,7 +72,7 @@ def calculate_landed_cost(cart_items, header_fields):
         ratio = r["row_net_total"] / total_net_safe
         row_landed_total = r["row_net_total"] + (total_addon * ratio) - (total_header_disc * ratio)
 
-        # COST PER BASE UNIT - THIS IS YOUR INVENTORY COST
+        # COST PER BASE UNIT - THIS IS YOUR INVENTORY COSTa
         if r["eff_base_qty"] > 0:
             cost_per_base = row_landed_total / r["eff_base_qty"]
         else:

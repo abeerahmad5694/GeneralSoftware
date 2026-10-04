@@ -110,6 +110,11 @@ class Purchase(models.Model):
     row_expiry_dt = models.DateField(null=True, blank=True)
     row_pack_qty_rcvd = models.PositiveIntegerField(default=0, null=True, blank=True,
         help_text="Actually received vs pack_qty ordered")
+    
+    row_remaining_qty = models.PositiveIntegerField(default=0, null=True, blank=True,
+        help_text="Remaining base_qty after sale")
+
+
 
     # === Tax - HEADER LEVEL ===
     header_wht_percent = models.DecimalField(max_digits=5, decimal_places=2, default=0, null=True, blank=True, help_text='Example: You buy goods Rs. 100,000 from an unregistered supplier. FBR rate = 4.5% WHT.header_wht_percent = 4.5header_wht_amount = 4500You pay supplier 95,500. You deposit 4,500 to FBR via CPR.')

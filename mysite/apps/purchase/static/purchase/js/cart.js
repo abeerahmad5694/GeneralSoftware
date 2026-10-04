@@ -162,7 +162,7 @@ function addToLocalCart(products) {
     const dynamicFields = {};
     if (window.PURCHASE_CART_ROW_FIELDS) {
       for (const [fieldName, fieldConfig] of Object.entries(window.PURCHASE_CART_ROW_FIELDS)) {
-        dynamicFields[fieldName] = product[fieldName] !== undefined ? product[fieldName] : (fieldConfig.default ?? "");
+        dynamicFields[fieldName] = product[fieldName] !== undefined ? product[fieldName] : getDefaultDynamicFieldValue(fieldConfig);
       }
     }
 
@@ -271,6 +271,19 @@ function applyCalculation(item, overrides = {}) {
   return item;
 }
 
+
+function getDefaultDynamicFieldValue(fieldConfig) {
+  if (fieldConfig?.type === "date") {
+    const date = new Date();
+    date.setMonth(date.getMonth() + 1);
+
+    // YYYY-MM-DD for <input type="date">
+    return date.toISOString().split("T")[0];
+  }
+
+  return fieldConfig?.default ?? "";
+}
+
 async function loadBillIntoCart(bill) {
   clearCart();
   console.log('calling')
@@ -326,7 +339,7 @@ async function loadBillIntoCart(bill) {
     const dynamicFields = {};
     if (window.PURCHASE_CART_ROW_FIELDS) {
       for (const [fieldName, fieldConfig] of Object.entries(window.PURCHASE_CART_ROW_FIELDS)) {
-        dynamicFields[fieldName] = item[fieldName] !== undefined ? item[fieldName] : (fieldConfig.default ?? "");
+        dynamicFields[fieldName] = item[fieldName] !== undefined ? item[fieldName] : getDefaultDynamicFieldValue(fieldConfig);
       }
     }
 

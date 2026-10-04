@@ -82,7 +82,7 @@ async function save_bill(event) {
 
   const discountPercent = Number(discountInput.value || 0);
   const receivedAmountVal = Number(receivedAmount.value || 0);
-  if (!receivedAmountVal) return showToast("Please enter received amount");
+  // if (!receivedAmountVal) return showToast("Please enter received amount");
 
   const deliveryChargesVal = Number(deliveryCharges.value || 0);
   const remarks = remarksInput.value || "";
@@ -353,7 +353,8 @@ async function fetchBill(voucherNo = null, load_old_bill = false) {
       // Totals section
       if (discountInput) discountInput.value = bill.header_discount_percent ?? 0;
       if (discountAmount) discountAmount.textContent = (parseFloat(bill.header_discount_amount) ?? 0).toFixed(2);
-      if (deliveryCharges) deliveryCharges.value = bill.header_delivery_charges ?? 0;
+      // if (deliveryCharges) deliveryCharges.value = bill.header_delivery_charges ?? 0;
+      if (deliveryCharges) deliveryCharges.value = bill.header_msc_charges ?? 0; // iam saving msc charges in divlery charges field so msc backend = delivery
       if (deliveryChargesDisplay) deliveryChargesDisplay.textContent = (parseFloat(bill.header_delivery_charges) ?? 0).toFixed(2);
       if (itemTotal) itemTotal.textContent = (parseFloat(bill.header_item_total) ?? 0).toFixed(2);
       if (netTotal) netTotal.textContent = (parseFloat(bill.header_net_total) ?? 0).toFixed(2);

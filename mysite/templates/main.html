@@ -104,7 +104,8 @@
                         {% endif %}
 
                         {% if 'stock_update' in user_perm_codes %}
-                        <a href="{% url 'stock_audit' %}">Stock Audit / Adjustments</a>
+                        {% comment %} <a href="{% url 'stock_audit' %}">Stock Audit</a> {% endcomment %}
+                        <a href="{% url 'stock_adjustment' %}">Stock Adjustment</a>
                         {% endif %}
                         <!-- <a href="#">Warehouse</a>
                         <a href="#">Transfers</a> -->

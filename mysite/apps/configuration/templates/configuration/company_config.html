@@ -1020,6 +1020,89 @@
                         </select>
                         <span class="hint">Choose the period selected automatically when this company’s dashboard opens.</span>
                     </div>
+
+
+
+
+
+
+
+
+
+                    <div class="config-item">
+    <label for="stock_valuation_method">
+        Stock valuation method
+        <i
+            class="fas fa-info-circle hint"
+            title="Method used to calculate item costs and value of stock on hand"
+        ></i>
+    </label>
+
+    <select
+        id="stock_valuation_method"
+        name="stock_valuation_method"
+        class="config-input"
+    >
+        <option value="" disabled>
+            Select Method
+        </option>
+
+        <option
+            value="FEFO"
+            {% if config.general.stock_valuation_method == 'FEFO' %}selected{% endif %}
+        >
+            FEFO (First Expired, First Out)
+        </option>
+
+        <option
+            value="FIFO"
+            {% if config.general.stock_valuation_method == 'FIFO' %}selected{% endif %}
+        >
+            FIFO (First In, First Out)
+        </option>
+
+        <option
+            value="LIFO"
+            {% if config.general.stock_valuation_method == 'LIFO' %}selected{% endif %}
+        >
+            LIFO (Last In, First Out)
+        </option>
+
+        <option
+            value="AVERAGE"
+            {% if config.general.stock_valuation_method == 'AVERAGE' %}selected{% endif %}
+        >
+            Average Cost
+        </option>
+
+        <option
+            value="LAST_PUR_PRICE"
+            {% if config.general.stock_valuation_method == 'LAST_PUR_PRICE' %}selected{% endif %}
+        >
+            Last Purchase Price
+        </option>
+    </select>
+
+    <span class="hint">
+        Changes take effect immediately for new stock entries.
+    </span>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    
                 </div>
             </div>
         </div>

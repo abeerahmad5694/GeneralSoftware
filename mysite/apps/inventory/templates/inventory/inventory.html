@@ -204,7 +204,7 @@
     }
 
     .isw-body {
-        max-height: 500px;
+        max-height: 100%;
         overflow-y: auto;
         overflow-x: hidden;
     }
@@ -483,6 +483,238 @@
     .image-btn.btn-remove:hover {
         background: rgba(220, 38, 38, 1);
     }
+
+
+
+
+
+    /* --- NEW PRODUCT IDENTITY HEADER --- */
+.identity-card {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 20px;
+    align-items: start;
+}
+.identity-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.identity-label {
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #475569;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.prod-name-input {
+    height: 38px!important;
+    font-size: 0.9rem!important;
+    font-weight: 700!important;
+}
+.urdu-row {
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    gap: 12px;
+    align-items: end;
+}
+.toggle-active {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    height: 38px;
+}
+.switch {
+    width: 36px; height: 20px;
+    background: #cbd5e1; border-radius: 20px;
+    position: relative; cursor: pointer; transition:.2s;
+}
+.switch.on { background: #2563eb; }
+.switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; background: white; border-radius: 50%;
+    transition:.2s;
+}
+.switch.on::after { transform: translateX(16px); }
+
+/* compact image for header */
+.identity-image.image-drop-zone {
+    height: 108px!important;
+    border-radius: 8px;
+}
+.identity-image.image-drop-zone.text-gray-400 { margin-bottom: 2px!important; }
+.identity-image.image-drop-zone.text-3xl { font-size: 1.2rem!important; }
+
+/* FOOTER SAVE BAR */
+.form-footer-save {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border-color);
+    padding: 12px 16px;
+    margin: 20px -24px -24px -24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    z-index: 20;
+}
+@media (max-width: 768px){
+   .identity-card { grid-template-columns: 1fr; }
+   .urdu-row { grid-template-columns: 1fr; }
+}
+
+/* --- FOOTER OPERATIONS BAR - RESPONSIVE --- */
+.footer-operations {
+    position: sticky;
+    bottom: 0;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    padding: 10px 16px;
+    margin: 24px -24px -24px -24px;
+    z-index: 50;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+}
+.footer-grid {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+}
+.footer-actions-left {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.footer-actions-right {
+    display: flex;
+    gap: 8px;
+}
+.footer-actions-left.btn-action,
+.footer-actions-right.btn-action {
+    width: auto;
+    min-width: 110px;
+    height: 38px;
+    padding: 0 14px;
+}
+@media (max-width: 768px){
+   .footer-grid {
+        grid-template-columns: 1fr;
+    }
+   .footer-actions-left {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+   .footer-actions-right {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+   .footer-actions-right.btn-save {
+        grid-column: span 3;
+        order: -1;
+    }
+}
+
+
+/* === FOOTER PROFESSIONAL - ONE ROW === */
+.footer-operations{
+  position: sticky;
+  bottom: 0;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border-top: 1px solid #e2e8f0;
+  padding: 10px 14px;
+  margin: 28px -24px -24px -24px;
+  z-index: 50;
+  box-shadow: 0 -1px 0 #e2e8f0, 0 -8px 30px rgba(15,23,42,0.08);
+}
+.footer-grid{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.footer-grid::-webkit-scrollbar{ display:none; }
+
+.footer-actions-left,
+.footer-actions-right{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Reset your old width:100% buttons inside footer */
+.footer-operations .btn-action{
+  width: auto !important;
+  min-width: auto !important;
+  height: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 8px !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.footer-operations .btn-clear{
+  background:#fff !important; color:#334155 !important;
+  border:1px solid #e2e8f0 !important;
+}
+.footer-operations .btn-clear:hover{ background:#f8fafc !important; border-color:#cbd5e1 !important; }
+
+.footer-operations .btn-list{
+  background:#f1f5f9 !important; color:#334155 !important;
+  border:1px solid #e2e8f0 !important;
+}
+.footer-operations .btn-list:hover{ background:#e2e8f0 !important; }
+
+.footer-operations .btn-delete{
+  background:#fff1f2 !important; color:#e11d48 !important;
+  border:1px solid #ffe4e6 !important;
+}
+.footer-operations .btn-delete:hover{ background:#ffe4e6 !important; }
+
+.footer-operations .btn-save{
+  background:#0f172a !important; color:#fff !important;
+  border:1px solid #0f172a !important;
+  box-shadow: 0 2px 8px rgba(15,23,42,.22) !important;
+  padding: 0 20px !important;
+}
+.footer-operations .btn-save:hover{
+  background:#1e293b !important; transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(15,23,42,.28) !important;
+}
+
+/* Mobile still ONE ROW with swipe */
+@media (max-width: 640px){
+  .footer-operations{ padding: 8px 10px; }
+  .footer-grid{ gap: 8px; }
+  .footer-operations .btn-action{
+    height: 40px !important;
+    padding: 0 12px !important;
+    font-size: 0.75rem !important;
+  }
+}   
+
+
 </style>
 {% endblock %}
 
@@ -497,7 +729,7 @@
             <input type="hidden" name="company" value="{{ company_id }}" id="id_company">
             <input type="hidden" name="branch" value="{{ branch_id }}" id="id_branch">
             <!-- Header & Prominent Name -->
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
+            {% comment %} <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-2">
                 <div class="w-full md:w-1/2">
                     <h1 class="text-lg font-black text-gray-900 mb-2">Add or Update Item</h1>
                     <div class="form-group-h">
@@ -513,7 +745,55 @@
                         <span class="text-[0.65rem] font-black text-gray-700">ACTIVE</span>
                     </label>
                 </div>
+            </div> {% endcomment %}
+
+            <!-- NEW PRODUCT IDENTITY - Like your 2nd image -->
+<div class="identity-card">
+    <div class="identity-fields">
+        <div>
+            {% comment %} <div class="identity-label"><i class="fas fa-box text- text-blue-500"></i> PRODUCT IDENTITY</div> {% endcomment %}
+            <label class="identity-label">Product Name *</label>
+            <div class="flex gap-2">
+                <div class="flex-1">{{ form.prod_name }}</div>
+                <span class="h- px-3 flex items-center text- font-bold bg-slate-100 border border-slate-200 rounded-md text-slate-500">ENGLISH</span>
             </div>
+        </div>
+        <div class="urdu-row">
+            <div>
+                <label class="identity-label">Urdu Name (اردو نام)</label>
+                {{ form.prod_name_ur }}
+            </div>
+            <div>
+                <label class="identity-label">Status</label>
+                <label class="toggle-active cursor-pointer" id="activeToggleLabel">
+                    <div class="switch on" id="activeSwitch"></div>
+                    <span class="text- font-bold" id="activeText">Yes</span>
+                    <div class="hidden">{{ form.active }}</div>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image aligned to right like screenshot -->
+    <div class="identity-image">
+        <div class="image-drop-zone" id="imageDropZone" onclick="document.getElementById('product-image-input').click()">
+            <div class="text-gray-400 mb-1"><i class="fas fa-image"></i></div>
+            <div class="text- font-semibold text-gray-700">Click to upload</div>
+            <div class="text- text-gray-500">PNG, JPG up to 2MB</div>
+
+            <div class="image-preview-wrapper {% if form.instance.prod_picture %}has-image{% endif %}" id="imagePreviewWrapper">
+                <img id="image-preview" src="{% if form.instance.prod_picture %}{{ form.instance.prod_picture.url }}{% endif %}">
+                <div class="image-actions" onclick="event.stopPropagation()">
+                    <button type="button" class="image-btn btn-remove" id="btnRemoveImage"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="delete_image" id="deleteImageFlag" value="false">
+        <input type="file" name="prod_picture" id="product-image-input" class="hidden" accept="image/*">
+    </div>
+</div>
+
+
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- General Information -->
@@ -739,7 +1019,7 @@
             </div>
 
 
-
+{% comment %} 
             <!-- Image Upload Section -->
             <div class="surface p-4 rounded-lg border border-[var(--border-color)] col-span-1 md:col-span-3 lg:col-span-4 mt-4">
                 <div class="section-title text-indigo-600">
@@ -769,7 +1049,44 @@
                 <input type="hidden" name="delete_image" id="deleteImageFlag" value="false">
                 <input type="file" name="prod_picture" id="product-image-input" class="hidden" accept="image/*">
             </div>
-            
+             {% endcomment %}
+
+
+
+
+             <!-- FOOTER OPERATIONS - RESPONSIVE -->
+<div class="footer-operations">
+    <div class="footer-grid">
+
+
+        <div class="footer-actions-right">
+            <button type="button" class="btn-action btn-clear!hidden md:!flex">
+                
+            </button>
+            <button type="submit" class="btn-action btn-save" id='inventory_save_btn'>
+                <i class="fas fa-save"></i> SAVE ITEM (F2)
+            </button>
+        </div>
+
+
+        
+        <div class="footer-actions-left">
+            <button type="button" class="btn-action btn-clear" onclick="window.location.reload()">
+                <i class="fas fa-redo"></i> New
+            </button>
+            <button type="button" class="btn-action btn-list" id='viewListBtn'>
+                <i class="fas fa-list"></i> List
+            </button>
+            <button type="button" class="btn-action btn-list" id='copySameItemBtn'>
+                <i class="fas fa-copy"></i> Copy
+            </button>
+            <button type="button" class="btn-action btn-delete" id='delete_inventory_item'>
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+        
+    </div>
+</div>
 
 
 
@@ -778,10 +1095,10 @@
 
     <!-- Right Panel: Actions -->
     <div class="panel-right p-6 space-y-4">
-        <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 pb-2 mb-6">
-            Operations</h3>
+        {% comment %} <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 pb-2 mb-6">
+            Operations</h3> {% endcomment %}
 
-        <div class="space-y-2">
+        <div class=" hidden space-y-2">
             <button class="btn-action btn-save shadow-lg" type="submit" form="inventoryForm" id='inventory_save_btn'>
                 <i class="fas fa-save text-[10px]"></i> SAVE ITEM (F2)
             </button>
@@ -801,6 +1118,9 @@
                 <i class="fas fa-trash text-[10px]"></i> DELETE ITEM
             </button>
         </div>
+
+
+
 
         <!-- Inline Search Widget -->
         <div class="isw-panel" id="iswContainer">
@@ -837,6 +1157,38 @@
 
 
 <script>
+
+    const activeCheckbox = document.querySelector('[name="active"]');
+    const activeSwitch = document.getElementById('activeSwitch');
+    const activeText = document.getElementById('activeText');
+
+    function syncActive(){
+        const isOn = activeCheckbox.checked;
+        activeSwitch.classList.toggle('on', isOn);
+        activeText.textContent = isOn? 'Yes' : 'No';
+        activeText.className = isOn? 'text-[11px] font-bold text-emerald-700' : 'text-[11px] font-bold text-slate-500';
+    }
+
+    if(activeCheckbox){
+        // FORCE DEFAULT TRUE if new item
+        const isEditMode = document.getElementById('id_inv_id')?.value!== '';
+        if(!isEditMode &&!activeCheckbox.hasAttribute('data-initialized')){
+            activeCheckbox.checked = true;
+        }
+        activeCheckbox.setAttribute('data-initialized','true');
+
+        activeCheckbox.addEventListener('change', syncActive);
+        syncActive();
+
+        document.getElementById('activeToggleLabel').addEventListener('click', (e)=>{
+            if(e.target!== activeCheckbox){
+                e.preventDefault();
+                activeCheckbox.checked =!activeCheckbox.checked;
+                activeCheckbox.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+
     const dropZone = document.getElementById('imageDropZone');
     const fileInput = document.getElementById('product-image-input');
     const previewWrapper = document.getElementById('imagePreviewWrapper');

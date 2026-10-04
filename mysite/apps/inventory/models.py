@@ -174,5 +174,198 @@ class Inventory(models.Model):
 
 
 
+
+
+
+class StockLot(models.Model):
+    """The REAL stock. One row = one purchase batch. Qty tracking for all 5 methods."""
+    company = models.ForeignKey('configuration.Company', on_delete=models.CASCADE, db_index=True)
+    branch = models.ForeignKey('configuration.Branch', on_delete=models.CASCADE, db_index=True)
+    
+    # Meaningful name: inventory_item_id = inv_id
+    inventory_item = models.ForeignKey(
+        Inventory, 
+        on_delete=models.CASCADE, 
+        db_index=True, 
+        db_column='item_id',
+        related_name='stock_lots'
+    )
+
+    # qty = qty * pack_qty
+    quantity_received = models.DecimalField(max_digits=12, decimal_places=3, db_column='qty_received')
+    quantity_remaining = models.DecimalField(max_digits=12, decimal_places=3, db_index=True, db_column='qty_remaining')
+    
+    # rate_cost = row_total_cost_per_base_unit
+    rate_cost_per_unit = models.DecimalField(max_digits=12, decimal_places=4, db_column='unit_cost')
+
+    # row_expiry_dt
+    expiry_date = models.DateField(null=True, blank=True, db_index=True, db_column='expiry_date')
+    
+    # header date
+    receipt_date = models.DateField(db_index=True, db_column='receipt_date')
+
+    # Source - meaningful names
+    source_voucher_type = models.CharField(max_length=20, db_index=True, db_column='source_type') # PURCHASE, SALE, OPENING
+    source_bill_no = models.IntegerField(db_index=True, db_column='source_id') # bill_no
+    acc_code = models.IntegerField(db_index=True, db_column='acc_code',null=True,blank=True) # acc_code for accounting
+    source_row_id = models.BigIntegerField(null=True, db_column='source_line_id') # Purchase.id / Invoice.id
+
+    dateent = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stock_lot'
+        indexes = [
+            models.Index(fields=['company', 'branch', 'inventory_item', 'receipt_date', 'id'], name='idx_lot_fifo'),
+            models.Index(fields=['company', 'branch', 'inventory_item', 'expiry_date', 'receipt_date'], name='idx_lot_fefo'),
+        ]
+
+    def __str__(self):
+        return f"Lot {self.id} - {self.inventory_item.prod_name} - Rem {self.quantity_remaining}/{self.quantity_received}"
+
+class StockLedger(models.Model):
+    """Immutable history for 5 valuations. NEVER update. Only INSERT and REVERSE."""
+    company = models.ForeignKey('configuration.Company', on_delete=models.CASCADE, db_index=True)
+    branch = models.ForeignKey('configuration.Branch', on_delete=models.CASCADE, db_index=True)
+    
+    inventory_item = models.ForeignKey(
+        Inventory, 
+        on_delete=models.CASCADE, 
+        db_index=True, 
+        db_column='item_id',
+        related_name='stock_ledgers'
+    )
+
+    stock_lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, null=True, db_column='lot_id')
+
+    # qty: + for IN, - for OUT
+    base_quantity = models.DecimalField(max_digits=12, decimal_places=3, db_column='qty')
+    
+    rate_cost_per_unit = models.DecimalField(max_digits=12, decimal_places=4, db_column='unit_cost')
+    net_value = models.DecimalField(max_digits=15, decimal_places=2, db_column='value') # base_quantity * rate_cost
+
+    # Voucher reference - meaningful names
+    voucher_type = models.CharField(max_length=20, db_index=True, db_column='ref_type') # PURCHASE, SALE
+    voucher_bill_no = models.IntegerField(db_index=True, db_column='ref_id') # bill_no
+    voucher_row_id = models.BigIntegerField(null=True, db_column='ref_line_id') # Invoice.id / Purchase.id
+
+
+    acc_code = models.IntegerField(db_index=True, db_column='acc_code',null=True,blank=True) # acc_code for accounting
+    
+    
+    adj_type = models.CharField(max_length=20, null=True,blank = True,db_column='adj_type' ,default= '') # OPENING, DAMAGE, LEAKAGE
+    voucher_date = models.DateField(db_index=True, db_column='date')
+    dateent = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stock_ledger'
+        indexes = [
+            models.Index(fields=['voucher_type', 'voucher_bill_no'], name='idx_led_voucher'),
+            models.Index(fields=['company', 'branch', 'inventory_item', 'voucher_date'], name='idx_led_item_date'),
+        ]
+
+    def __str__(self):
+        return f"{self.voucher_type} {self.voucher_bill_no} - {self.base_quantity}"
+    
+    
+    
+    
+    
+
+
 # -- Add this once in mysql for full text index in mysql
 # ALTER TABLE inventory_inventory ADD FULLTEXT(prod_name, alias_name);
+
+
+# class StockLot(models.Model):
+#     """The REAL stock. One row = one purchase/opening batch."""
+#     company = models.ForeignKey('configuration.Company', on_delete=models.CASCADE)
+#     branch = models.ForeignKey('configuration.Branch', on_delete=models.CASCADE)
+#     item = models.ForeignKey(Inventory, on_delete=models.CASCADE, db_index=True)
+
+#     qty_received = models.DecimalField(max_digits=12, decimal_places=3)
+#     qty_remaining = models.DecimalField(max_digits=12, decimal_places=3, db_index=True)
+#     unit_cost = models.DecimalField(max_digits=12, decimal_places=4)
+
+#     expiry_date = models.DateField(null=True, blank=True, db_index=True)
+#     receipt_date = models.DateField(db_index=True)
+    
+#     # Where this lot came from
+#     source_type = models.CharField(max_length=20, db_index=True) # OPENING, PURCHASE, ADJUSTMENT_IN
+#     source_id = models.IntegerField() # id of voucher
+#     source_line_id = models.IntegerField(null=True)
+
+#     dateent = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         db_table = 'stock_lot'
+#         indexes = [
+#             models.Index(fields=['company', 'branch', 'item', 'receipt_date', 'id']),
+#             models.Index(fields=['company', 'branch', 'item', 'expiry_date', 'receipt_date']),
+#         ]
+
+# class StockLedger(models.Model):
+#     """Immutable history. NEVER update/delete. Only INSERT and REVERSE."""
+#     company = models.ForeignKey('configuration.Company', on_delete=models.CASCADE)
+#     branch = models.ForeignKey('configuration.Branch', on_delete=models.CASCADE)
+#     item = models.ForeignKey(Inventory, on_delete=models.CASCADE)
+
+#     lot = models.ForeignKey(StockLot, on_delete=models.PROTECT, null=True)
+#     qty = models.DecimalField(max_digits=12, decimal_places=3) # +10 / -5
+#     unit_cost = models.DecimalField(max_digits=12, decimal_places=4)
+#     value = models.DecimalField(max_digits=15, decimal_places=2)
+
+#     ref_type = models.CharField(max_length=20, db_index=True) # PURCHASE, SALE, ADJUSTMENT, OPENING
+#     ref_id = models.IntegerField(db_index=True) # Voucher Header ID
+#     ref_line_id = models.IntegerField(null=True)
+
+#     date = models.DateField(db_index=True)
+#     dateent = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         db_table = 'stock_ledger'
+        
+        
+        
+        
+        
+
+# class StockAdjustment(models.Model):
+#     ADJUSTMENT_TYPES = [
+#         ('OPENING', 'Opening'),
+#         ('DESTROYED_EXPIRED', 'Destroyed/Expired'),
+#         ('SAMPLE_GIVEN', 'Sample Given'),
+#         ('BREAKAGE_LEAKAGE', 'Breakage/Leakage'),
+#         ('THEFT_SHORTAGE', 'Theft/Shortage'),
+#         ('EXCESS_FOUND', 'Excess Found'),
+#         ('CORRECTION', 'Correction'),
+#     ]
+
+#     company = models.ForeignKey('configuration.Company', on_delete=models.CASCADE)
+#     branch = models.ForeignKey('configuration.Branch', on_delete=models.CASCADE)
+#     voucher_no = models.IntegerField(null=True, blank=True)
+    
+#     item = models.IntegerField()
+#     category = models.ForeignKey(ItemCategory, on_delete=models.SET_NULL, null=True, blank=True)
+#     subcategory = models.ForeignKey(ItemSubCategory, on_delete=models.SET_NULL, null=True, blank=True)
+#     location = models.CharField(max_length=255, null=True, blank=True)
+    
+#     qty = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+#     pack_qty = models.DecimalField(max_digits=12, decimal_places=3, default=1)
+    
+#     rate_cost = models.DecimalField(max_digits=12, decimal_places=4, default=0)
+#     net_cost = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+#     adj_type = models.CharField(max_length=50, choices=ADJUSTMENT_TYPES)
+#     acc_code = models.IntegerField(null=True, blank=True)
+#     reason = models.CharField(max_length=255, null=True, blank=True)
+    
+#     date = models.DateField(db_index=True)
+#     dateent = models.DateTimeField(auto_now_add=True)
+#     user = models.CharField(max_length=150, null=True, blank=True)
+
+#     class Meta:
+#         db_table = 'stock_adjustment'
+#         indexes = [
+#             models.Index(fields=['company', 'voucher_no']),
+#             models.Index(fields=['company', 'date']),
+#         ]

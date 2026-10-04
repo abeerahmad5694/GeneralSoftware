@@ -7,7 +7,7 @@ from apps.reports.views.comprehensive_sale import comprehensive_sale
 from apps.reports.views.accounts_receivable import accounts_receivable
 from apps.reports.views.accounts_payable import accounts_payable
 from apps.reports.views.stock_report import stock_report
-from apps.reports.views.item_ledger import item_ledger
+
 from . import render_to_pdf , render_to_excell
 from apps.reports.views.urdu_names import urdu_name_suggestions
 from apps.reports.views.inventory_update import inventory_update
@@ -23,7 +23,7 @@ urlpatterns = [
     path('accounts-receivable/', accounts_receivable, name='accounts_receivable'),
     path('accounts-payable/', accounts_payable, name='accounts_payable'),
     path('stock-report/', stock_report, name='stock_report'),
-    path('item-ledger/', item_ledger, name='item_ledger'),
+    
     path('daybook/calc-opening-closing/', daybook_calc_opening_closing, name='daybook_calc_opening_closing'),
     path('inventory-update/', inventory_update, name='inventory_update'),
     path('inventory-update/urdu-suggestions/', urdu_name_suggestions, name='urdu_name_suggestions'),

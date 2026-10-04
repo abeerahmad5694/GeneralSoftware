@@ -20,14 +20,18 @@ class Migration(migrations.Migration):
             ("BP", 0, "Bank Payment"),
             ("BR", 0, "Bank Receipt"),
             ("JV", 0, "Journal Voucher"),
+            
             ("INV", 0, "Invoice Voucher"),
             ("QOT", 0, "Quotation Voucher"),
-            ("IRTN", 0, "Invoice Return Voucher"),
             ("PUR", 0, "Purchase Voucher"),
+            ("IRTN", 0, "Invoice Return Voucher"),
             ("PRTN", 0, "Purchase Return Voucher"),
+            
             ("GSRNO", 0, "Gledg Srno"),
             ("ISRNO", 0, "Invoice Srno"),
             ("PSRNO", 0, "Purchase Srno"),
+            
+            ("SADJ", 0, "Stock Adjustment Voucher"),
 
         ]
 

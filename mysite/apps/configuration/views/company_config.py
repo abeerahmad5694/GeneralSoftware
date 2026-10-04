@@ -1,3 +1,4 @@
+# import requests_oauthlib
 from apps.myledger.services.helpers import get_user_perms
 from django.shortcuts import redirect
 from django.shortcuts import render, redirect
@@ -89,12 +90,31 @@ def company_config_view(request):
             'enable_expiry_tracking': request.POST.get('inventory_enable_expiry_tracking') == 'on',
             'enable_low_stock_alerts': request.POST.get('inventory_enable_low_stock_alerts') == 'on',
         }
+        
+        
+        stock_valuation_method = request.POST.get(
+            'stock_valuation_method'
+        ) or config_instance.stock_valuation_method or 'LAST_PUR_PRICE'
+
+        allowed_methods = {
+            'FIFO',
+            'FEFO',
+            'LIFO',
+            'AVERAGE',
+            'LAST_PUR_PRICE',
+        }
+
+        if stock_valuation_method not in allowed_methods:
+            stock_valuation_method = 'LAST_PUR_PRICE'
+
+
 
         general_config = {
             'multiple_bill_prints': int(request.POST.get('general_multiple_bill_prints') or 1),
             'currency_symbol': request.POST.get('general_currency_symbol') or 'Rs',
             'company_tagline': request.POST.get('general_company_tagline') or '',
             'online_software': request.POST.get('general_online_software') == 'on',
+            'stock_valuation_method': stock_valuation_method,
         }
 
         dashboard_default_period = request.POST.get('dashboard_default_period') or 'today'
@@ -118,6 +138,9 @@ def company_config_view(request):
             config_instance = CompanyConfiguration(company=company, branch=branch)
 
         config_instance.config_data = full_config_data
+        config_instance.stock_valuation_method = stock_valuation_method
+
+
         # Update legacy fields to keep consistency
         config_instance.multiple_bill_prints = general_config['multiple_bill_prints']
         config_instance.pos_sale_receipt_size = 'Thermal' if 'thermal' in pos_config['default_page_size'].lower() else pos_config['default_page_size'].upper()
@@ -136,6 +159,8 @@ def company_config_view(request):
                         'multiple_bill_prints': config_instance.multiple_bill_prints,
                         'pos_sale_receipt_size': config_instance.pos_sale_receipt_size,
                         'purchase_receipt_size': config_instance.purchase_receipt_size,
+                        'stock_valuation_method': config_instance.stock_valuation_method,
+
                     }
                 )
             messages.success(request, f"Configuration updated and applied to all branches of {company.name}.")
@@ -153,7 +178,7 @@ def company_config_view(request):
     merged_config, _ = get_company_config(company.id if company else None, branch.id if branch else None)
     companies = list(Company.objects.all().order_by('name')) if request.user.is_superuser else [company]
     branches = list(Branch.objects.filter(company=company).order_by('name')) if company else []
-
+    print('merged_config',merged_config)
     context = {
         'company': company,
         'branch': branch,

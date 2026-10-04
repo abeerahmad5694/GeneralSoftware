@@ -2,7 +2,7 @@ from apps.sale.services.sale_calculations import calculate_row_totals, calculate
 from decimal import Decimal
 from apps.sale.models import Invoice ,BarcodConfig
 
-
+from apps.inventory.models import Inventory
 
 def now_karachi():
     from apps.myglobal.services.helpers import DateTimeHelper

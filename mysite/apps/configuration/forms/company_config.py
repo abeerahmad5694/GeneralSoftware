@@ -38,6 +38,9 @@ class CompanyConfigurationForm(forms.ModelForm):
             'purchase_receipt_size': forms.Select(attrs={
                 'class': 'w-full border border-[var(--border-color)] rounded-lg px-3 py-2 bg-transparent text-sm text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition',
             }),
+            'stock_valuation_method': forms.Select(attrs={
+                'class': 'w-full border border-[var(--border-color)] rounded-lg px-3 py-2 bg-transparent text-sm text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] transition',
+            }),
         }
 
     def __init__(self, *args, **kwargs):

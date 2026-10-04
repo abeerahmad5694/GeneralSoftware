@@ -29,11 +29,7 @@ def get_user_perms(request, codename):
 @transaction.atomic
 def get_next_voucher(vtype):
     vtype = vtype.upper()
-    obj = (
-        Vchno.objects
-        .select_for_update()
-        .get(TYPE=vtype)
-    )
+    obj, created = Vchno.objects.select_for_update().get_or_create(TYPE=vtype, defaults={'VCHNO': 0})
 
     obj.VCHNO += 1
     obj.save()

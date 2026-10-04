@@ -4,12 +4,13 @@ from django.db.models import F
 from apps.inventory.models import Inventory
 from apps.inventory.forms.inventory import InventoryForm
 
+from apps.myglobal.services.helpers import get_user_perms
 
 def save_update_inventory(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
     
-    from apps.myglobal.services.helpers import get_user_perms
+    
     has_permission, message = get_user_perms(request, 'add_item')
     if not has_permission:
         return JsonResponse({'success': False, 'error': message}, status=403)

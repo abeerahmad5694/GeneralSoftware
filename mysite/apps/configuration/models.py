@@ -67,6 +67,19 @@ class CompanyConfiguration(models.Model):
     pos_sale_receipt_size = models.CharField(max_length=10, choices=RECEIPT_CHOICES, default='Thermal')
     credit_sale_receipt_size = models.CharField(max_length=10, choices=RECEIPT_CHOICES, default='Thermal')
     purchase_receipt_size = models.CharField(max_length=10, choices=RECEIPT_CHOICES, default='Thermal')
+    VALUATION_METHOD_CHOICES = [
+        ('FIFO', 'FIFO (First In, First Out)'),
+        ('FEFO', 'FEFO (First Expired, First Out)'),
+        ('LIFO', 'LIFO (Last In, First Out)'),
+        ('AVERAGE', 'Weighted Average Cost'),
+        ('LAST_PUR_PRICE', 'Last Purchase Price'),
+    ]
+    stock_valuation_method = models.CharField(
+        max_length=20,
+        choices=VALUATION_METHOD_CHOICES,
+        default='LAST_PUR_PRICE',
+        help_text="Stock valuation method for COGS and inventory lot consumption"
+    )
 
     # Ultra-fast flexible JSON configuration per module
     config_data = models.JSONField(default=dict, blank=True, help_text="Module-wise JSON configuration: {'pos': {...}, 'purchase': {...}, 'quotation': {...}, 'inventory': {...}, 'general': {...}}")

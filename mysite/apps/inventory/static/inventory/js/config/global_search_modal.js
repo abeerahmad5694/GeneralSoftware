@@ -50,6 +50,32 @@ GlobalSearchModal.init([
             // Example: fill form fields
             // document.getElementById('id_prod_name').value = item.prod_name;
         }
-    }
+    },
+
+    // {
+    //     modalId: 'select-account',
+    //     triggerSelector: '#btn-select-account',
+    //     triggerKey: 'F3',                    // optional hotkey
+    //     title: 'Find Account',
+    //     placeholder: 'Search by account head, name, code ...',
+    //     appLabel: 'myaccounts',
+    //     modelName: 'Accounts',
+    //     primaryKey: 'ACC_CODE',
+    //     indexdbStore: null,            // null = skip local
+    //     searchFields: ['ACC_CODE', 'ACC_NAME'],
+    //     displayColumns: [
+    //         { key: 'ACC_CODE', header: 'Code', width: '80px' },
+    //         { key: 'ACC_NAME', header: 'Account Name' },
+    //     ],
+    //     excludeFilters: { 'TYPE__exact': 'Group' },   // exclude from local results
+    //     pageSize: 10,
+    //     onSelect: async (item) => {
+    //         document.getElementById('globalAccCode').value = item.ACC_CODE;
+    //         // document.getElementById('last-bill-amount').innerHTML = 'Client: ' + item.ACC_NAME
+    //         // document.getElementById('product-search').focus();
+    //     }
+    // },
+
+
 ]);
 
