@@ -56,7 +56,8 @@ from apps.configuration.models import CompanyConfiguration
 # ─── Constants ─────────────────────────────────────────────────────────────────
 VALUATION_METHODS = ('FIFO', 'FEFO', 'LIFO', 'AVERAGE', 'LAST_PUR_PRICE')
 DEFAULT_METHOD = 'LAST_PUR_PRICE'
-# DEFAULT_METHOD = 'LAST_PUR_PRICE'
+STRICT_MODE = True
+
 
 
 # ─── Configuration helper ───────────────────────────────────────────────────────
@@ -94,62 +95,93 @@ def _order_lots_for_method(lots_qs, method: str):
         # FIFO, AVERAGE, LAST_PUR_PRICE all deduct oldest-first for qty tracking
         return lots_qs.order_by('receipt_date', 'id')
 
-
-
 def _reverse_voucher_stock(company_id, branch_id, voucher_type, voucher_bill_no, block_if_partially_sold=True):
     ledger_entries = StockLedger.objects.select_for_update().filter(
         company_id=company_id, branch_id=branch_id,
-        voucher_type=voucher_type,
-        voucher_bill_no=voucher_bill_no,
+        voucher_type=voucher_type, voucher_bill_no=voucher_bill_no,
     )
-
     if not ledger_entries.exists():
         return
 
-    # 1. For SALE - put qty back to lots
-    if voucher_type in ('SALE', 'ADJUSTMENT'):
-        for led in ledger_entries.select_related('stock_lot'):
-            if led.stock_lot_id and led.base_quantity < 0:
-                StockLot.objects.filter(id=led.stock_lot_id).update(
-                    quantity_remaining=F('quantity_remaining') + led.base_quantity
-                )
-                Inventory.objects.filter(inv_id=led.inventory_item_id).update(
-                    bal_qty=F('bal_qty') + led.base_quantity
-                )
-
-    # 2. For PURCHASE - if lot not sold, DELETE lot completely, don't keep zero lots
-    elif voucher_type == 'PURCHASE':
+    if voucher_type == 'PURCHASE':
         lot_ids = list(ledger_entries.exclude(stock_lot_id=None).values_list('stock_lot_id', flat=True).distinct())
-        if lot_ids:
-            # Check if any lot partially sold
-            if block_if_partially_sold:
-                bad = StockLot.objects.filter(id__in=lot_ids).exclude(quantity_remaining=F('quantity_received'))
-                if bad.exists():
-                    raise ValueError(f"Cannot perfome this action. PURCHASE {voucher_bill_no} - already sold. Contact Administration")
+        if lot_ids and block_if_partially_sold and STRICT_MODE:
+            bad = StockLot.objects.filter(id__in=lot_ids).exclude(quantity_remaining=F('quantity_received'))
+            if bad.exists():
+                raise ValueError(f"Cannot edit PURCHASE {voucher_bill_no} - already sold.")
+        for inv_id in ledger_entries.values_list('inventory_item_id', flat=True).distinct():
+            total_qty = ledger_entries.filter(inventory_item_id=inv_id).aggregate(s=Sum('base_quantity'))['s'] or 0
+            Inventory.objects.filter(inv_id=inv_id).update(bal_qty=F('bal_qty') - total_qty)
+        ledger_entries.delete()
+        StockLot.objects.filter(id__in=lot_ids).delete()
+        return
 
-            # Delete ledger first
-            for inv_id in ledger_entries.values_list('inventory_item_id', flat=True).distinct():
-                total_qty = ledger_entries.filter(inventory_item_id=inv_id).aggregate(s=Sum('base_quantity'))['s'] or 0
-                Inventory.objects.filter(inv_id=inv_id).update(bal_qty=F('bal_qty') - total_qty)
+    # SALE, SALE_RETURN, PURCHASE_RETURN, ADJUSTMENT -> ONE time restore only
+    for led in ledger_entries.select_related('stock_lot'):
+        if led.stock_lot_id:
+            StockLot.objects.filter(id=led.stock_lot_id).update(
+                quantity_remaining=F('quantity_remaining') - led.base_quantity
+            )
+    for inv_id in ledger_entries.values_list('inventory_item_id', flat=True).distinct():
+        total_qty = ledger_entries.filter(inventory_item_id=inv_id).aggregate(s=Sum('base_quantity'))['s'] or 0
+        Inventory.objects.filter(inv_id=inv_id).update(bal_qty=F('bal_qty') - total_qty)
+    
+    ledger_entries.delete()
 
-            ledger_entries.delete()
-            # NOW delete the lots - this is the missing part
-            StockLot.objects.filter(id__in=lot_ids).delete()
-            return
+# def _reverse_voucher_stock(company_id, branch_id, voucher_type, voucher_bill_no, block_if_partially_sold=True):
+#     ledger_entries = StockLedger.objects.select_for_update().filter(
+#         company_id=company_id, branch_id=branch_id,
+#         voucher_type=voucher_type,
+#         voucher_bill_no=voucher_bill_no,
+#     )
 
-    # For SALE, delete ledger after restore
-    # For PURCHASE we already deleted
-    if voucher_type!= 'PURCHASE':
-        # adjust bal_qty already done above for SALE
-        # for SALE we already restored, just delete ledger
-        if voucher_type in ('SALE',):
-            ledger_entries.delete()
-        else:
-            # generic
-            for inv_id in ledger_entries.values_list('inventory_item_id', flat=True).distinct():
-                total_qty = ledger_entries.filter(inventory_item_id=inv_id).aggregate(s=Sum('base_quantity'))['s'] or 0
-                Inventory.objects.filter(inv_id=inv_id).update(bal_qty=F('bal_qty') - total_qty)
-            ledger_entries.delete()
+#     if not ledger_entries.exists():
+#         return
+
+#     # 1. For SALE - put qty back to lots
+#     if voucher_type in ('SALE', 'ADJUSTMENT', 'SALE_RETURN', 'PURCHASE_RETURN'):
+#         for led in ledger_entries.select_related('stock_lot'):
+#             if led.stock_lot_id:
+#                 StockLot.objects.filter(id=led.stock_lot_id).update(
+#                     quantity_remaining=F('quantity_remaining') - led.base_quantity
+#                 )
+#                 Inventory.objects.filter(inv_id=led.inventory_item_id).update(
+#                     bal_qty=F('bal_qty') - led.base_quantity
+#                 )
+
+#     # 2. For PURCHASE - if lot not sold, DELETE lot completely, don't keep zero lots
+#     elif voucher_type == 'PURCHASE':
+#         lot_ids = list(ledger_entries.exclude(stock_lot_id=None).values_list('stock_lot_id', flat=True).distinct())
+#         if lot_ids:
+#             # Check if any lot partially sold
+#             if block_if_partially_sold and STRICT_MODE:
+#                 bad = StockLot.objects.filter(id__in=lot_ids).exclude(quantity_remaining=F('quantity_received'))
+#                 if bad.exists():
+#                     raise ValueError(f"Cannot perfome this action. PURCHASE {voucher_bill_no} - already sold. Contact Administration")
+
+#             # Delete ledger first
+#             for inv_id in ledger_entries.values_list('inventory_item_id', flat=True).distinct():
+#                 total_qty = ledger_entries.filter(inventory_item_id=inv_id).aggregate(s=Sum('base_quantity'))['s'] or 0
+#                 Inventory.objects.filter(inv_id=inv_id).update(bal_qty=F('bal_qty') - total_qty)
+
+#             ledger_entries.delete()
+#             # NOW delete the lots - this is the missing part
+#             StockLot.objects.filter(id__in=lot_ids).delete()
+#             return
+
+#     # For SALE, delete ledger after restore
+#     # For PURCHASE we already deleted
+#     if voucher_type!= 'PURCHASE':
+#         # adjust bal_qty already done above for SALE
+#         # for SALE we already restored, just delete ledger
+#         if voucher_type in ('SALE',):
+#             ledger_entries.delete()
+#         else:
+#             # generic
+#             for inv_id in ledger_entries.values_list('inventory_item_id', flat=True).distinct():
+#                 total_qty = ledger_entries.filter(inventory_item_id=inv_id).aggregate(s=Sum('base_quantity'))['s'] or 0
+#                 Inventory.objects.filter(inv_id=inv_id).update(bal_qty=F('bal_qty') - total_qty)
+#             ledger_entries.delete()
             
             
             
@@ -244,9 +276,10 @@ def STOCK_IN(
     is_update: bool = False,
     adj_type: str = None,
     acc_code: str = None,
+    batch_no: str = None,
 ) -> StockLot:
     """
-    Record stock IN (purchase, opening, adjustment-in).
+    Record stock IN (purchase, opening, adjustment-in) or PURCHASE RETURN (if qty < 0).
 
     Parameters
     ----------
@@ -270,6 +303,90 @@ def STOCK_IN(
             block_if_partially_sold=(voucher_type == 'PURCHASE'),
         )
 
+    if base_quantity < 0:
+        # PURCHASE RETURN
+        return_qty = abs(base_quantity)
+        lots_to_deduct = None
+        
+        # 1. Match by batch_no
+        if batch_no:
+            lots_to_deduct = list(StockLot.objects.select_for_update().filter(
+                company_id=company_id, branch_id=branch_id, inventory_item_id=inventory_item_id,
+                batch_no=batch_no, quantity_remaining__gt=0
+            ).order_by('receipt_date', 'id'))
+            
+        # 2. If no batch_no or not found, match by expiry_date
+        if not lots_to_deduct and expiry_date:
+            lots_to_deduct = list(StockLot.objects.select_for_update().filter(
+                company_id=company_id, branch_id=branch_id, inventory_item_id=inventory_item_id,
+                expiry_date=expiry_date, quantity_remaining__gt=0
+            ).order_by('receipt_date', 'id'))
+            
+        # 3. If still not found, FIFO
+        if not lots_to_deduct:
+            lots_to_deduct = list(StockLot.objects.select_for_update().filter(
+                company_id=company_id, branch_id=branch_id, inventory_item_id=inventory_item_id,
+                quantity_remaining__gt=0
+            ).order_by('receipt_date', 'id'))
+
+        remaining_to_deduct = return_qty
+        ledger_rows_to_create = []
+        lots_to_update = []
+        
+        for lot in lots_to_deduct:
+            if remaining_to_deduct <= 0:
+                break
+            allocated = min(lot.quantity_remaining, remaining_to_deduct)
+            
+            ledger_rows_to_create.append(StockLedger(
+                company_id=company_id,
+                branch_id=branch_id,
+                inventory_item_id=inventory_item_id,
+                stock_lot=lot,
+                base_quantity=-allocated,  # negative for OUT (purchase return)
+                rate_cost_per_unit=lot.rate_cost_per_unit,
+                net_value=-(allocated * lot.rate_cost_per_unit),
+                voucher_type=voucher_type,
+                voucher_bill_no=voucher_bill_no,
+                voucher_row_id=voucher_row_id,
+                voucher_date=voucher_date,
+                adj_type=adj_type,
+                acc_code=acc_code,
+                batch_no=batch_no,
+            ))
+            lots_to_update.append((lot.id, lot.quantity_remaining - allocated))
+            remaining_to_deduct -= allocated
+            
+        if remaining_to_deduct > 0:
+            # Fallback
+            ledger_rows_to_create.append(StockLedger(
+                company_id=company_id,
+                branch_id=branch_id,
+                inventory_item_id=inventory_item_id,
+                stock_lot=None,
+                base_quantity=-remaining_to_deduct,
+                rate_cost_per_unit=rate_cost_per_unit,
+                net_value=-(remaining_to_deduct * rate_cost_per_unit),
+                voucher_type=voucher_type,
+                voucher_bill_no=voucher_bill_no,
+                voucher_row_id=voucher_row_id,
+                voucher_date=voucher_date,
+                adj_type=adj_type,
+                acc_code=acc_code,
+                batch_no=batch_no,
+            ))
+            
+        if ledger_rows_to_create:
+            StockLedger.objects.bulk_create(ledger_rows_to_create)
+        for lot_id, new_qty in lots_to_update:
+            StockLot.objects.filter(id=lot_id).update(quantity_remaining=new_qty)
+            
+        Inventory.objects.filter(
+            inv_id=inventory_item_id, company_id=company_id, branch_id=branch_id
+        ).update(bal_qty=F('bal_qty') - return_qty)
+        
+        return None
+
     # Create the new lot
     new_lot = StockLot.objects.create(
         company_id=company_id,
@@ -279,6 +396,7 @@ def STOCK_IN(
         quantity_remaining=base_quantity,
         rate_cost_per_unit=rate_cost_per_unit,
         expiry_date=expiry_date,
+        batch_no=batch_no,
         receipt_date=voucher_date,
         source_voucher_type=voucher_type,
         source_bill_no=voucher_bill_no,
@@ -301,6 +419,7 @@ def STOCK_IN(
         voucher_date=voucher_date,
         acc_code = acc_code,
         adj_type=adj_type,
+        batch_no=batch_no,
     )
 
     # Update Inventory.bal_qty and last_pur_price (for PURCHASE / LAST_PUR_PRICE)
@@ -332,9 +451,11 @@ def STOCK_OUT(
     is_update: bool = False,
     adj_type: str = None,
     acc_code: str = None,
+    batch_no: str = None,
 ) -> Tuple[Decimal, Decimal]:
     """
     Deduct stock and return (total_cogs, per_unit_cogs).
+    Handles SALE RETURN (if qty < 0) to put stock back.
 
     Save the returned values into Invoice.row_net_cost and Invoice.row_rate_cost.
 
@@ -356,6 +477,52 @@ def STOCK_OUT(
             block_if_partially_sold=False,
         )
 
+    if base_quantity_required < 0:
+        # SALE RETURN
+        return_qty = abs(base_quantity_required)
+        
+        # User: "when qty is < 0 then quantiny remaining must be plus"
+        # Find the latest lot to add the returned quantity back to
+        latest_lot = StockLot.objects.select_for_update().filter(
+            company_id=company_id,
+            branch_id=branch_id,
+            inventory_item_id=inventory_item_id
+        ).order_by('-receipt_date', '-id').first()
+        
+        inventory_item = _get_inventory_item(company_id, branch_id, inventory_item_id)
+        per_unit_cogs = inventory_item.last_pur_price or inventory_item.cost or Decimal(0)
+        
+        if latest_lot:
+            per_unit_cogs = latest_lot.rate_cost_per_unit
+            StockLot.objects.filter(id=latest_lot.id).update(
+                quantity_remaining=F('quantity_remaining') + return_qty
+            )
+            
+        total_cogs = per_unit_cogs * base_quantity_required # negative total cogs
+        
+        StockLedger.objects.create(
+            company_id=company_id,
+            branch_id=branch_id,
+            inventory_item_id=inventory_item_id,
+            stock_lot=latest_lot,
+            base_quantity=return_qty, # base_quantity_required is < 0, so return_qty is positive (stock IN)
+            rate_cost_per_unit=per_unit_cogs,
+            net_value=per_unit_cogs * return_qty,
+            voucher_type=voucher_type,
+            voucher_bill_no=voucher_bill_no,
+            voucher_row_id=voucher_row_id,
+            voucher_date=voucher_date,
+            adj_type=adj_type,
+            acc_code=acc_code,
+            batch_no=batch_no,
+        )
+        
+        Inventory.objects.filter(inv_id=inventory_item_id, company_id=company_id, branch_id=branch_id).update(
+            bal_qty=F('bal_qty') + return_qty
+        )
+        
+        return total_cogs, per_unit_cogs
+
     method = _get_valuation_method(company_id, branch_id)
 
     # Handle LAST_PUR_PRICE: COGS from Inventory.last_pur_price, still deduct lots
@@ -368,7 +535,8 @@ def STOCK_OUT(
             base_quantity_required, voucher_date, voucher_type, voucher_bill_no, voucher_row_id,
             per_unit_cogs=per_unit_cogs,
             adj_type=adj_type,
-            acc_code = acc_code,
+            acc_code=acc_code,
+            batch_no=batch_no,
         )
         Inventory.objects.filter(inv_id=inventory_item_id, company_id=company_id, branch_id=branch_id).update(
             bal_qty=F('bal_qty') - base_quantity_required
@@ -431,7 +599,8 @@ def STOCK_OUT(
             voucher_row_id=voucher_row_id,
             voucher_date=voucher_date,
             adj_type=adj_type,
-            acc_code = acc_code,
+            acc_code=acc_code,
+            batch_no=batch_no,
         ))
         lots_to_update.append((lot.id, new_remaining))
 
@@ -456,7 +625,8 @@ def STOCK_OUT(
             voucher_row_id=voucher_row_id,
             voucher_date=voucher_date,
             adj_type=adj_type,
-            acc_code = acc_code,
+            acc_code=acc_code,
+            batch_no=batch_no,
         ))
 
     # Bulk write ledger (one query)
@@ -492,6 +662,7 @@ def _deduct_lots_tracking_only(
     per_unit_cogs: Decimal,
     adj_type: str = None,
     acc_code: str = None,
+    batch_no: str = None,
 ) -> None:
     """
     LAST_PUR_PRICE mode: deduct lots FIFO for qty tracking but use fixed per_unit_cogs for value.
@@ -526,7 +697,8 @@ def _deduct_lots_tracking_only(
             voucher_row_id=voucher_row_id,
             voucher_date=voucher_date,
             adj_type=adj_type,
-            acc_code = acc_code,
+            acc_code=acc_code,
+            batch_no=batch_no,
         ))
         lot_updates.append((lot.id, lot.quantity_remaining - allocated))
         remaining -= allocated
@@ -545,7 +717,8 @@ def _deduct_lots_tracking_only(
             voucher_row_id=voucher_row_id,
             voucher_date=voucher_date,
             adj_type=adj_type,
-            acc_code = acc_code,
+            acc_code=acc_code,
+            batch_no=batch_no,
         ))
 
     if ledger_rows:

@@ -203,6 +203,9 @@ class StockLot(models.Model):
     
     # header date
     receipt_date = models.DateField(db_index=True, db_column='receipt_date')
+    
+    
+    batch_no = models.CharField(max_length=50, db_index=True, db_column='batch_no',null=True,blank=True) # PURCHASE, SALE
 
     # Source - meaningful names
     source_voucher_type = models.CharField(max_length=20, db_index=True, db_column='source_type') # PURCHASE, SALE, OPENING
@@ -245,6 +248,7 @@ class StockLedger(models.Model):
 
     # Voucher reference - meaningful names
     voucher_type = models.CharField(max_length=20, db_index=True, db_column='ref_type') # PURCHASE, SALE
+    batch_no = models.CharField(max_length=50, db_index=True, db_column='batch_no',null=True,blank=True) # PURCHASE, SALE
     voucher_bill_no = models.IntegerField(db_index=True, db_column='ref_id') # bill_no
     voucher_row_id = models.BigIntegerField(null=True, db_column='ref_line_id') # Invoice.id / Purchase.id
 

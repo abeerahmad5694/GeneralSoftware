@@ -61,9 +61,9 @@
             <!-- Navigation -->
             <nav class="flex-1 overflow-y-auto overflow-x-hidden py-1 pb-4 custom-scroll">
 
-                <div class="sb-section-label sb-label">Main</div>
-
+                
                 {% if 'view_dashboard' in user_perm_codes %}
+                <div class="sb-section-label sb-label">Main</div>
                 <a href="{%url 'dashboard' %}"
                     class="nav-item {%if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"
                     data-tip="Dashboard">

@@ -464,11 +464,17 @@
       <option value="" selected>Select Adjustment type</option>
       <option value="OPENING">Opening Stock</option>
       <option value="CORRECTION">Correction</option>
-      <option value="DESTROYED_EXPIRED">Destroyed / Expired</option>
+      {% comment %} <option value="DESTROYED_EXPIRED">Destroyed / Expired</option>
       <option value="SAMPLE_GIVEN">Sample Given</option>
       <option value="THEFT_SHORTAGE">Theft / Shortage</option>
-      <option value="EXCESS_FOUND">Excess Found</option>
+      <option value="EXCESS_FOUND">Excess Found</option> {% endcomment %}
     </select>
+
+
+
+
+
+    <div class="hidden input-group">
     <input
       type="text"
       id="globalAccCode"
@@ -492,6 +498,10 @@
     >
       <i class="fas fa-check-double"></i> Apply
     </button>
+
+    </div>
+
+
     <div style="margin-left: auto; color: #92400e; font-size: 12px">
       <i class="fas fa-info-circle mr-1"></i>
       Enter cost for <strong>Opening Stock</strong> rows.

@@ -1,7 +1,8 @@
 
 
 
-from django.shortcuts import render
+
+from apps.myglobal.services.helpers import get_user_perms
 from django.db import transaction
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.csrf import csrf_exempt
@@ -11,8 +12,6 @@ from apps.sale.models import Invoice
 from apps.myglobal.services.helpers import get_next_voucher
 from django.http import JsonResponse
 from apps.sale.services.helpers import json_to_invoice ,now_karachi
-from django.forms.models import model_to_dict
-from apps.myledger.models import Gledg
 from apps.myledger.models import Vchno ,Gledg
 from apps.myledger.services.dto import GledgLineDTO
 from apps.myledger.services.voucher_utills import create_gledg_entries
@@ -78,6 +77,15 @@ def save_bill(request):
 
             # Validate / sanitize per-row discounts and negative sale
             for item in items:
+                
+                
+                if item.get('qty') < 0:
+                    has_permission, message = get_user_perms(request, "return_sale")
+                    if not has_permission:
+                        return JsonResponse({'success': False, 'message': message}, status=200)
+                
+                        
+                        
                 if not row_discount_allowed:
                     item['row_discount_percent'] = 0
                     item['row_discount_amount'] = 0
@@ -85,6 +93,13 @@ def save_bill(request):
                     row_disc_amt = 0
                 else:
                     qty = float(item.get('qty') or 0)
+                    
+                    # if qty<0:
+                    #     has_permission, message = get_user_perms(request, "return_sale")
+                    #     if not has_permission:
+                    #         return JsonResponse({'success': False, 'message': message}, status=200)
+                    
+                    
                     rate = float(item.get('rate') or 0)
                     gross = qty * rate
                     row_disc_pct = float(item.get('row_discount_percent') or 0)
@@ -171,6 +186,10 @@ def save_bill(request):
         # --- End security enforcement ---
 
         if data.get('bill_no'):
+            has_permission, message = get_user_perms(request, "edit_sale")
+            if not has_permission:
+                return JsonResponse({'success': False, 'message': message}, status=200)
+
             old_bill_no = int(data.get('bill_no'))
             old_bill = Invoice.objects.filter(bill_no=old_bill_no, company=user.userprofile.company, branch=user.userprofile.branch)
             if not old_bill:
@@ -188,13 +207,14 @@ def save_bill(request):
             # This restores StockLot.qty_remaining and Inventory.bal_qty atomically.
             try:
                 
-                _reverse_voucher_stock(
-                    company_id=user.userprofile.company.id,
-                    branch_id=user.userprofile.branch.id,
-                    voucher_type='SALE',
-                    voucher_bill_no=old_bill_no,
-                    block_if_partially_sold=False,
-                )
+                for v_type in ('SALE', 'SALE_RETURN'):
+                    _reverse_voucher_stock(
+                        company_id=user.userprofile.company.id,
+                        branch_id=user.userprofile.branch.id,
+                        voucher_type=v_type,
+                        voucher_bill_no=old_bill_no,
+                        block_if_partially_sold=False,
+                    )
                 
                 old_bill.delete()
             
@@ -264,18 +284,31 @@ def save_bill(request):
                 
                 row_obj = created_invoices[row_index]  # <- real row with PK
                 voucher_row_id = row_obj.id 
-                 
-                total_cogs, per_unit_cogs = STOCK_OUT(
-                    company_id=user.userprofile.company.id,
-                    branch_id=user.userprofile.branch.id,
-                    inventory_item_id=inv_id,
-                    base_quantity_required=base_qty,
-                    voucher_date=sale_date,
-                    voucher_type='SALE',
-                    voucher_bill_no=bill_no,
-                    voucher_row_id=voucher_row_id,
-                    is_update=False,  # reversal done above before old_bill.delete()
-                )
+                if base_qty > 0:
+                    total_cogs, per_unit_cogs = STOCK_OUT(
+                        company_id=user.userprofile.company.id,
+                        branch_id=user.userprofile.branch.id,
+                        inventory_item_id=inv_id,
+                        base_quantity_required=base_qty,
+                        voucher_date=sale_date,
+                        voucher_type='SALE',
+                        voucher_bill_no=bill_no,
+                        voucher_row_id=voucher_row_id,
+                        is_update=False,  # reversal done above before old_bill.delete()
+                    )
+                else:
+                    total_cogs, per_unit_cogs = STOCK_OUT(
+                        company_id=user.userprofile.company.id,
+                        branch_id=user.userprofile.branch.id,
+                        inventory_item_id=inv_id,
+                        base_quantity_required=base_qty,
+                        voucher_date=sale_date,
+                        voucher_type='SALE_RETURN',
+                        voucher_bill_no=bill_no,
+                        voucher_row_id=voucher_row_id,
+                        is_update=False,  # reversal done above before old_bill.delete()
+                    )
+                    
                 # Match created row by row_index order (same order as items list)
                 if row_index < len(created_invoices):
                     row_obj = created_invoices[row_index]
@@ -395,6 +428,13 @@ def save_bill(request):
 
 
 def get_bill(request,bill_no):
+    
+    
+    has_permission, message = get_user_perms(request, "edit_sale")
+    if not has_permission:
+        return JsonResponse({'success': False, 'message': message}, status=200)
+
+    
     user = request.user
     if not bill_no:
         return JsonResponse({"success": False, "message": "Invalid bill_no"})
@@ -494,14 +534,14 @@ def delete_sale_bill(request,pur_inv,bill_no):
             
             try:
                 
-                _reverse_voucher_stock(
-                    company_id=user.userprofile.company.id,
-                    branch_id=user.userprofile.branch.id,
-                    voucher_type='SALE',
-                    voucher_bill_no=bill_no,
-                    block_if_partially_sold=False,
-                )
-                
+                for v_type in ('SALE', 'SALE_RETURN'):
+                    _reverse_voucher_stock(
+                        company_id=user.userprofile.company.id,
+                        branch_id=user.userprofile.branch.id,
+                        voucher_type=v_type,
+                        voucher_bill_no=bill_no,
+                        block_if_partially_sold=False,
+                    )
                 
             
             except Exception as e:
@@ -533,13 +573,14 @@ def delete_sale_bill(request,pur_inv,bill_no):
             
             try:
                 
-                _reverse_voucher_stock(
-                    company_id=user.userprofile.company.id,
-                    branch_id=user.userprofile.branch.id,
-                    voucher_type='PURCHASE',
-                    voucher_bill_no=bill_no,
-                    block_if_partially_sold=True,
-                )
+                for v_type in ('PURCHASE','PURCHASE_RETURN'):
+                    _reverse_voucher_stock(
+                        company_id=user.userprofile.company.id,
+                        branch_id=user.userprofile.branch.id,
+                        voucher_type=v_type,
+                        voucher_bill_no=bill_no,
+                        block_if_partially_sold=True,
+                    )
                 
                 
             

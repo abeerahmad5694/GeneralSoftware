@@ -20,26 +20,43 @@ def create_default_data(sender, **kwargs):
     # ---------------------------------------------------------
     default_permissions = [
         {'name': 'View Dashboard', 'code': 'view_dashboard', 'module': 'dashboard'},
+        
         {'name': 'View Inventory', 'code': 'view_inventory', 'module': 'inventory'},
         {'name': 'Add Item', 'code': 'add_item', 'module': 'inventory'},
         {'name': 'Edit Item', 'code': 'edit_item', 'module': 'inventory'},
         {'name': 'Delete Item', 'code': 'delete_item', 'module': 'inventory'},
+        
+        
         {'name': 'Create Invoice', 'code': 'create_invoice', 'module': 'sales'},
+        {'name': 'Edit Invoice', 'code': 'edit_invoice', 'module': 'sales'},
         {'name': 'View Own Sales', 'code': 'view_own_sales', 'module': 'sales'},
         {'name': 'Return Sale', 'code': 'return_sale', 'module': 'sales'},
+        
+        
         {'name': 'Create Quotation', 'code': 'create_quotation', 'module': 'quotation'},
         {'name': 'View Own Quotation', 'code': 'view_own_quotation', 'module': 'quotation'},
+        
+        
         {'name': 'Create Purchase Invoice', 'code': 'create_purchase_invoice', 'module': 'purchase'},
+        {'name': 'Edit Purchase', 'code': 'edit_purchase', 'module': 'purchase'},
         {'name': 'View Own Purchases', 'code': 'view_own_purchases', 'module': 'purchase'},
         {'name': 'Return Purchase', 'code': 'return_purchase', 'module': 'purchase'},
+        
+        
         {'name': 'Create Accounts', 'code': 'create_accounts', 'module': 'accounts'},
         {'name': 'Edit Accounts', 'code': 'edit_accounts', 'module': 'accounts'},
+        
+        
         {'name': 'View Ledger', 'code': 'view_ledger', 'module': 'ledger'},
         {'name': 'Create Vouchers', 'code': 'create_vouchers', 'module': 'ledger'},
         {'name': 'Edit Vouchers', 'code': 'edit_vouchers', 'module': 'ledger'},
         {'name': 'Delete Vouchers', 'code': 'delete_vouchers', 'module': 'ledger'},
+        
+        
         {'name': 'Manage Users', 'code': 'manage_users', 'module': 'system'},
         {'name': 'Configure System', 'code': 'configure_system', 'module': 'system'},
+        
+        
         {'name': 'View Reports (Admin Reports eg. Profit & Loss)', 'code': 'see_reports', 'module': 'reports'},
         {'name': 'View Cost In Reports', 'code': 'see_cost_in_reports', 'module': 'reports'},
         {'name': 'View Payable Statements', 'code': 'see_payable_statements', 'module': 'reports'},

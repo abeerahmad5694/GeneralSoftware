@@ -1,6 +1,8 @@
 
 
 
+from apps.myglobal.services.helpers import get_user_perms
+from logging import exception
 from django.shortcuts import render
 from django.db import transaction
 
@@ -63,6 +65,11 @@ def save_bill(request):
             return JsonResponse({"success": False, "message": "No items provided"})
     
         if data.get('bill_no'):
+            
+            has_permission, message = get_user_perms(request, "edit_purchase")
+            if not has_permission:
+                return JsonResponse({'success': False, 'message': message}, status=200)
+            
             old_bill_no = int(data.get('bill_no'))
             old_bill = Purchase.objects.filter(bill_no=old_bill_no, company=user.userprofile.company, branch=user.userprofile.branch)
             if not old_bill:
@@ -79,15 +86,20 @@ def save_bill(request):
             # Reverse stock lots for this purchase BEFORE deleting the rows
             # This restores StockLot.qty_remaining and Inventory.bal_qty atomically.
             # Block if any lot has already been partially sold.
-            _reverse_voucher_stock(
-                company_id=user.userprofile.company.id,
-                branch_id=user.userprofile.branch.id,
-                voucher_type='PURCHASE',
-                voucher_bill_no=old_bill_no,
-                block_if_partially_sold=True,
-            )
-            old_bill.delete()
-            
+            try:
+                    
+                for v_type in ('PURCHASE','PURCHASE_RETURN'):
+                    _reverse_voucher_stock(
+                        company_id=user.userprofile.company.id,
+                        branch_id=user.userprofile.branch.id,
+                        voucher_type=v_type,
+                        voucher_bill_no=old_bill_no,
+                        block_if_partially_sold=True,
+                    )
+                old_bill.delete()
+            except Exception as e:
+                return JsonResponse({"success": False, "message": str(e)})
+                
         else:
             fields_will_update = {
                 'dateent': now_karachi(),
@@ -106,6 +118,13 @@ def save_bill(request):
 
         landed_calcs = calculate_landed_cost(items, data)
         is_return = data.get('is_return',False)
+        
+        
+        if is_return:
+            has_permission, message = get_user_perms(request, "return_purchase")
+            if not has_permission:
+                return JsonResponse({'success': False, 'message': message}, status=200)
+            
         data.pop('local_id',None)
         data.pop('items',None)
         data.pop('date',None)
@@ -145,7 +164,8 @@ def save_bill(request):
                 base_qty = Decimal(str(item.get('qty', 0))) * Decimal(str(item.get('pack_qty', 1)))
                 unit_cost_per_base = Decimal(str(landed.get('row_total_cost', 0) or 0))
                 expiry_date = item.get('row_expiry_dt') or None
-                stock_rows.append((inv_id, base_qty, unit_cost_per_base, expiry_date, index))
+                batch_no = item.get('row_batch_no') or None
+                stock_rows.append((inv_id, base_qty, unit_cost_per_base, expiry_date, batch_no, index))
 
         # Bulk insert all Purchase rows first
         Purchase.objects.bulk_create(invoices)
@@ -156,7 +176,7 @@ def save_bill(request):
         # Now call STOCK_IN once per item row (lots properly tracked)
         created_rows = list(Purchase.objects.filter(bill_no=bill_no, company_id= user.userprofile.company, branch_id= user.userprofile.branch).order_by('id'))
         # created_rows[0] is header but also has item
-        for idx, (inv_id, base_qty, unit_cost, expiry, _) in enumerate(stock_rows):
+        for idx, (inv_id, base_qty, unit_cost, expiry, batch_no, _) in enumerate(stock_rows):
         # for inv_id, base_qty, unit_cost_per_base, expiry_date, row_index in stock_rows:
             if base_qty == 0:
                 continue
@@ -165,13 +185,14 @@ def save_bill(request):
                     company_id=user.userprofile.company.id,
                     branch_id=user.userprofile.branch.id,
                     inventory_item_id=inv_id,
-                    base_quantity=abs(base_qty),
-                    rate_cost_per_unit=unit_cost_per_base,
+                    base_quantity=base_qty,  # passed as is (negative for return)
+                    rate_cost_per_unit=unit_cost,
                     voucher_date=purchase_date,
-                    voucher_type='PURCHASE',
+                    voucher_type='PURCHASE_RETURN' if base_qty < 0 else 'PURCHASE',
                     voucher_bill_no=bill_no,
                     voucher_row_id=created_rows[idx].id,   # row id not available via bulk_create without fetch
-                    expiry_date=expiry_date,
+                    expiry_date=expiry,
+                    batch_no=batch_no,
                     is_update=False,       # reversal already done above before old_bill.delete()
                 )
             except Exception as stock_err:
@@ -278,6 +299,10 @@ def save_bill(request):
 
 
 def get_bill(request,bill_no):
+    has_permission, message = get_user_perms(request, "edit_purchase")
+    if not has_permission:
+        return JsonResponse({'success': False, 'message': message}, status=200)
+
     user = request.user
     if not bill_no:
         return JsonResponse({"success": False, "message": "Invalid bill_no"})
