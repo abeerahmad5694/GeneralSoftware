@@ -190,6 +190,7 @@ async function save_bill(event) {
         page_type: purPageSize.toLowerCase(),
         document_type: "purchase_invoice",
         data_source: "server",           // "local" | "server"
+        renderSource: "server",
         payload: payload,                 // required when data_source === "local"
         allow_multiple_print: true,
         copies: copies,
@@ -208,6 +209,7 @@ async function save_bill(event) {
         page_type: purPageSize.toLowerCase(),
         document_type: "purchase_invoice",
         data_source: "local",           // "local" | "server"
+        renderSource: "local",
         payload: payload,                 // required when data_source === "local"
         allow_multiple_print: true,
         copies: copies,

@@ -189,7 +189,7 @@ function createLedgerRows(data) {
             <td>${row.DATE}</td>
             ${vnoCell}
             <td>${row.DESCRIPTION || ''}</td>
-            <td>${row.AMOUNT || ''}</td>
+            <td hidden>${row.AMOUNT || ''}</td>
             <td>${row.DEBIT || ''}</td>
             <td>${row.CREDIT || ''}</td>
             <td>${row.BALANCE || ''}</td>

@@ -235,47 +235,8 @@ window.DocumentPrinter = (function () {
         }
 
         try {
-            let registry = await window.OfflineTemplateEngine.getCachedRegistry();
-
-            // The offline engine resolves EVERY header / customer / footer /
-            // logo field through the field registry. With no registry it
-            // silently auto-hides all of them (only the items table and
-            // totals survive — they don't need the registry). So when the
-            // IndexedDB cache has no registry yet (preload not finished,
-            // failed, offline first visit, blocked storage…), fetch it on
-            // demand instead of rendering an empty-headed document.
-            if (!registry || !registry.fields) {
-                try {
-                    const res = await fetch(ENDPOINTS.fieldRegistry);
-                    if (res.ok) {
-                        registry = await res.json();
-                        if (window.IndexDBConfig && typeof window.IndexDBConfig.save_update_record === "function") {
-                            await window.IndexDBConfig.save_update_record("app_cache", {
-                                key: "field_registry",
-                                data: registry,
-                                updated_at: new Date().toISOString(),
-                            });
-                        }
-                    }
-                } catch (fetchErr) {
-                    console.warn("On-demand field registry fetch failed", fetchErr);
-                }
-            }
-
-            if (registry && registry.fields) {
-                return window.OfflineTemplateEngine.renderFromCache(configuration, documentData, registry);
-            }
-
-            // Still no registry: render on the server (which has the field
-            // registry in-process) rather than dropping every header field.
-            console.warn("Field registry unavailable, falling back to server render");
-            const data = await fetchJson(ENDPOINTS.render, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ configuration, document_data: documentData }),
-            });
-            return data.html;
-
+            const registry = await window.OfflineTemplateEngine.getCachedRegistry();
+            return window.OfflineTemplateEngine.renderFromCache(configuration, documentData, registry);
         } catch (err) {
             console.error("Local render failed", err);
             return `<div style="color:red">Render Error: ${err.message}</div>`;

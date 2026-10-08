@@ -21,8 +21,8 @@ def create_ledger_rows(acc_code, from_date, to_date):
         {"key": "vno", "label": "VCH #", "width": "64px"},
         {"key": "desc", "label": "DESCRIPTION", "width": "auto"},
         {"key": "amount", "label": "AMOUNT", "width": "100px"},
-        {"key": "debit", "label": "DEBIT ↕", "width": "100px"},
-        {"key": "credit", "label": "CREDIT ↕", "width": "100px"},
+        {"key": "debit", "label": "DEBIT +", "width": "100px"},
+        {"key": "credit", "label": "CREDIT -", "width": "100px"},
         {"key": "balance", "label": "BALANCE", "width": "110px"},
     ]
 

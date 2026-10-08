@@ -696,7 +696,17 @@
                         try {
                             console.log("[OTE] Background preload started...");
                             await window.OfflineTemplateEngine.preloadOfflineRenderData();
-                            sessionStorage.setItem(TEMPLATE_PRELOAD_KEY, '1');
+                            // sessionStorage.setItem(TEMPLATE_PRELOAD_KEY, '1');
+                            // Only mark done when the field registry actually
+                            // reached IndexedDB — otherwise header/footer/logo
+                            // fields would stay hidden all session and the
+                            // preload would never be retried.
+                            const reg = await window.OfflineTemplateEngine.getCachedRegistry();
+                            if (reg && reg.fields) {
+                                sessionStorage.setItem(TEMPLATE_PRELOAD_KEY, '1');
+                            } else {
+                                console.warn("[OTE] Registry not cached after preload; will retry on next page");
+                            }
                         } catch(e) {
                             console.warn("[OTE] Template preload failed:", e);
                         }
