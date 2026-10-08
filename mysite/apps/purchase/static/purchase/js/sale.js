@@ -1,5 +1,5 @@
 import { openDynamicVoucherModal } from "/static/myledger/js/modals/dynamic_voucher_modal.js";
-import { ReceiptModal } from "./waste/recept_modal.js";
+
 import smart_search from "./search_product_modal.js";
 import {
   fetchBill,
@@ -70,8 +70,8 @@ import {
   searchProductOffline,
   scan_barcode
 } from "./indexdb_crud.js";
-import { features, get_features } from "./waste/pos_features.js";
-import { POS_MAPPING } from "/static/sale/js/config/constants.js";
+// import removed
+import { POS_MAPPING, applyRistrictionsInPurchase } from "/static/sale/js/config/constants.js";
 import { get_all_banks } from "/static/myglobal/js/apis/get_all_banks.js";
 
 let allowSync = true;
@@ -96,7 +96,6 @@ async function loadBanks() {
 
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await get_features();
   
   await loadBanks()
 
@@ -175,7 +174,7 @@ function Setup_Listeners() {
   btnNewBill.addEventListener('click', New_bill);
   btnSaveBill.addEventListener('click', save_bill);
   searchInput.addEventListener('keydown', Search_Input_handler);
-  discountInput.addEventListener('input', Restrictions);
+  // discountInput.addEventListener('input', Restrictions);
 
   priceModeRadios.forEach((radio) => {
     radio.addEventListener('change', (e) => {
@@ -300,8 +299,9 @@ async function searchProduct(query, barcodeScan = null) {
 
 function Restrictions() {
   const discount_percent = parseFloat(discountInput.value) || 0;
-  if (discount_percent > features.pos_disc_flat_limit) {
-    alert(`Max discount allowed is ${features.pos_disc_flat_limit}%`);
+  const limit = window.companyConfigurations?.pos_disc_flat_limit || 0;
+  if (applyRistrictionsInPurchase && discount_percent > limit) {
+    alert(`Max discount allowed is ${limit}%`);
     discountInput.value = "";
     return;
   }

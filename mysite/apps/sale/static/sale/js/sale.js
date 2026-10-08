@@ -9,8 +9,10 @@ import {
   load_prv_bill,
   Edit_mode,
   edit_cart,
-  deleteBill,
+  
 } from "./bill_crud.js";
+
+import {deleteBill} from './delete_bill.js'
 import {
   renderCart,
   getCart,
@@ -72,13 +74,13 @@ import {
   searchProductOffline,
   scan_barcode
 } from "./indexdb_crud.js";
-import { features, get_features } from "./waste/pos_features.js";
+// import { features, get_features } from "./waste/pos_features.js";
 import { POS_MAPPING } from "/static/sale/js/config/constants.js";
 
 let allowSync = true;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await get_features();
+  
   // console.log('adkfjalkjfdlksjfklj/')
   // Load inventory into IndexedDB on load if not present
   // if (window.IndexDBConfig) {
@@ -136,6 +138,7 @@ if (btnDeleteBill) {
     const voucherNo = hidden_bill_no.value;
     const pur_inv = 'I';
     await deleteBill(voucherNo,pur_inv)
+    New_bill();
   });
 }
 

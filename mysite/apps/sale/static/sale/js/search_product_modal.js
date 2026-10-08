@@ -8,7 +8,7 @@ import {
 } from "./cart.js";
 
 import { fetchBill } from "./bill_crud.js";
-import { features } from "./waste/pos_features.js";
+// import { features } from "./waste/pos_features.js";
 import { paymentMode, netTotal, btnSaveBill, btnNewBill } from "./dom_elements.js";
 
 

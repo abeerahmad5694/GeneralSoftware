@@ -284,8 +284,7 @@ def save_bill(request):
             
             if valuation_method == 'LAST_PUR_PRICE':
                 for inv_id, base_qty, row_index in stock_rows:
-                    
-                    old_base_qty = int(items[row_index].get('row_old_total_base_qty') or 0) if update else 0
+                    old_base_qty = int(item.get('row_old_total_base_qty') or 0) if update else 0
                     handle_inventory_valuation(inv_id,base_qty,old_base_qty,called_from='INV',old_base_qty=old_base_qty,update=update)
             
             else:
@@ -343,6 +342,9 @@ def save_bill(request):
                     Invoice.objects.bulk_update(cogs_updates, ['row_net_cost', 'row_rate_cost'])
 
 
+        response = JsonResponse({"success": True, "header_voucher_no": bill_no})
+
+
         
         gledg_jobs.append({
             'data_copy': {
@@ -354,94 +356,109 @@ def save_bill(request):
             'bill_no': bill_no,
             'dateent': fields_will_update.get('dateent'),
             'update': update,
-            'company_id': company.id if company else None,
-            'branch_id': branch.id if branch else None,
+            'company_id': company.id,
+            'branch_id': branch.id,
         })
         
-    response = JsonResponse({"success": True, "header_voucher_no": bill_no})
+        
+        def _do_gledg():
+            
+            
+            if Decimal(str(data.get('header_total_paid') or "0")) not in [None,0,Decimal("0")] :
+                # my_counter_account = DEFAULT_MY_CASH_ACCOUNT if not str(data.get('header_payment_mode')).startswith('111') else int(data.get('header_payment_mode'))
+                my_counter_account = DEFAULT_MY_CASH_ACCOUNT if not str(data.get('header_payment_mode')).startswith('111') else DEFAULT_MY_BANK_ACCOUNT
+                v_types = ['CR']
+                if int(data.get('header_total_paid')) < 0:
+                    # v_types.append('CP')
+                    v_types = ['CP']
+                elif str(data.get('header_payment_mode')).startswith('111'):
+                    v_types = ["BR"]
+                # 'CR' if not str(data.get('header_payment_mode')).startswith('111') else 'BR'
 
-    # import threading
-    # from django.db import connection
+                lines = [];
+                return_lines = []
+                default_cash_client_acc = get_default_account_code('cash_client_acc', company.id if company else None, branch.id if branch else None)
 
-    def process_gledg_jobs(jobs=gledg_jobs, request_mock=request):
-        try:
-            for job in jobs:
-                data = job['data_copy']
-                bill_no = job['bill_no']
-                update = job['update']
-                dateent = job['dateent']
-                company_id = job['company_id']
-                branch_id = job['branch_id']
-                try:
-                    if Decimal(str(data.get('header_total_paid') or "0")) not in [None, 0, Decimal("0")]:
-                        my_counter_account = DEFAULT_MY_CASH_ACCOUNT if not str(data.get('header_payment_mode')).startswith('111') else DEFAULT_MY_BANK_ACCOUNT
-                        v_types = ['CR']
-                        if int(data.get('header_total_paid')) < 0:
-                            v_types = ['CP']
-                        elif str(data.get('header_payment_mode')).startswith('111'):
-                            v_types = ["BR"]
+                if int(data.get('header_total_paid')) != 0:
+                    lines.append(GledgLineDTO(
+                        accCode=int(data.get('header_acc_code') or 0) if data.get('header_acc_code') else default_cash_client_acc,
+                        head=data.get('head') or "",
+                        notes= f"INV# {fields_will_update.get('bill_no')}" if int(data.get('header_total_paid'))>0 else f"INV RETURN# {fields_will_update.get('bill_no')}",
+                        receiptNo = 0,
+                        chqNo = '0',
+                        amount = Decimal(abs(Decimal(data.get('header_total_paid')))).quantize(Decimal("0.000")),
+                        # amount = Decimal(int(positive_amount)).quantize(Decimal("0.000")),
+                        refAccCode = my_counter_account,
+                        amtType = "DR" if int(data.get('header_total_paid')) < 0 else 'CR' ,
+                    ) )
 
-                        lines = []
-                        return_lines = []
-                        default_cash_client_acc = get_default_account_code('cash_client_acc', company_id, branch_id)
 
-                        if int(data.get('header_total_paid')) != 0:
-                            lines.append(GledgLineDTO(
-                                accCode=int(data.get('header_acc_code') or 0) if data.get('header_acc_code') else default_cash_client_acc,
-                                head=data.get('head') or "",
-                                notes= f"INV# {bill_no}" if int(data.get('header_total_paid'))>0 else f"INV RETURN# {bill_no}",
-                                receiptNo = 0,
-                                chqNo = '0',
-                                amount = Decimal(abs(Decimal(data.get('header_total_paid')))).quantize(Decimal("0.000")),
-                                refAccCode = my_counter_account,
-                                amtType = "DR" if int(data.get('header_total_paid')) < 0 else 'CR' ,
-                            ))
+                # if return_amount != 0 and False:
+                #     return_lines.append(
+                #         GledgLineDTO(
+                #         accCode=int(data.get('header_acc_code') or 0) if data.get('header_acc_code') else default_cash_client_acc,
+                #         head=data.get('head') or "",
+                #         notes= f"INV RETURN# {fields_will_update.get('bill_no')}" ,
+                #         receiptNo = 0,
+                #         chqNo = '0',
+                #         # amount = Decimal(int(data.get('header_total_paid'))).quantize(Decimal("0.000")),
+                #         amount = Decimal(int(return_amount)).quantize(Decimal("0.000")),
+                #         refAccCode = my_counter_account,
+                #         amtType = "DR",
+                #     ))
+                
+                
+                if lines or return_lines:    
+                    old_positive_vno = 0
+                    old_gledg = {}
+                    if update:
+                        old_gledg = (
+                            Gledg.objects
+                            .filter(
+                                PUR_INV='I',
+                                INVOICE_ID=fields_will_update.get('bill_no'),
+                                AMT_TYPE='DR',
+                                V_TYPE__in=['CP', 'CR', 'BR'],
+                            )
+                            .values_list('VNO', 'V_TYPE')
+                        )
+
+
+                        for vno, v_type in old_gledg:
+                            if v_type == 'CP':
+                                old_return_vno = vno
+
+                            elif v_type in ['CR', 'BR']:
+                                old_positive_vno = vno
+                        # print('old_return_vno',old_gledg)
+                        # print('old_return_vno',old_gledg)
+
+
+                    for v_type in v_types:
                         
-                        if lines or return_lines:    
-                            old_positive_vno = 0
-                            old_return_vno = 0
-                            old_gledg = {}
-                            if update:
-                                old_gledg = (
-                                    Gledg.objects
-                                    .filter(
-                                        PUR_INV='I',
-                                        INVOICE_ID=bill_no,
-                                        AMT_TYPE='DR',
-                                        V_TYPE__in=['CP', 'CR', 'BR'],
-                                    )
-                                    .values_list('VNO', 'V_TYPE')
-                                )
+                        created, message, _vno = create_gledg_entries(
+                            request = request,
+                            lines=lines,
+                            # lines=lines if v_type != 'CP' else return_lines,
+                            date=fields_will_update.get('dateent'),
+                            v_type=v_type,
+                            remarks='',
+                            pur_inv='I',
+                            update=update if update and len(old_gledg) >= 1 else False,
+                            # vno_to_update = old_gledg.VNO if update and old_gledg else 0,
+                            vno_to_update = old_return_vno if update and v_type =='CP' and len(old_gledg) >= 1 else old_positive_vno,
+                            inv_id=fields_will_update.get('bill_no'),
+                            called_by_invoices = True,
+                            
+                            
+                        ) 
+                        if not created:
+                            raise Exception(f"Ledger creation failed: {message}") 
+        
+        
+        
+        transaction.on_commit(_do_gledg)
 
-                                for vno, v_type in old_gledg:
-                                    if v_type == 'CP':
-                                        old_return_vno = vno
-                                    elif v_type in ['CR', 'BR']:
-                                        old_positive_vno = vno
-
-                            for v_type in v_types:
-                                created, message, _vno = create_gledg_entries(
-                                    request = request_mock,
-                                    lines=lines,
-                                    date=dateent,
-                                    v_type=v_type,
-                                    remarks='',
-                                    pur_inv='I',
-                                    update=update if update and len(old_gledg) >= 1 else False,
-                                    vno_to_update = old_return_vno if update and v_type =='CP' and len(old_gledg) >= 1 else old_positive_vno,
-                                    inv_id=bill_no,
-                                    called_by_invoices = True,
-                                ) 
-                                if not created:
-                                    print(f"Ledger creation failed for INV {bill_no}: {message}") 
-                                        
-                except Exception as e:
-                    print(f"Ledger creation failed for INV {bill_no}: {e}")
-                    
-        except Exception as e:
-            print(f"Ledger creation failed: {e}")
-
-    transaction.on_commit(lambda: process_gledg_jobs())
 
     # synced = []
     # header_voucher_no = fields_will_update.get('bill_no')

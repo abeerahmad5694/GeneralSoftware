@@ -8,7 +8,8 @@ import {
 } from "./cart.js";
 
 import { fetchBill } from "./bill_crud.js";
-import { features } from "./waste/pos_features.js";
+// import removed
+import { applyRistrictionsInPurchase } from "/static/sale/js/config/constants.js";
 import { paymentMode, netTotal, btnSaveBill, btnNewBill } from "./dom_elements.js";
 
 
@@ -106,8 +107,9 @@ function smart_search(query) {
   // --- discount percent (**10 = discount 10%) ---
   if (query.startsWith("**")) {
     const discount = parseNum(query.slice(2));
-    if (parseFloat(discount) > features.pos_disc_flat_limit){
-      alert(`discountn must be less than ${features.pos_disc_flat_limit}`)
+    const limit = window.companyConfigurations?.pos_disc_flat_limit || 0;
+    if (applyRistrictionsInPurchase && parseFloat(discount) > limit){
+      alert(`discountn must be less than ${limit}`)
       return;
     }
     updateInput(".discount-row .discount-input", discount, refresh);

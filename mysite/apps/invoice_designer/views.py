@@ -128,10 +128,10 @@ class RenderDocumentView(View):
         document_data = body.get("document_data") or {}
 
         # User requested to print the payload in console
-        import json
-        print("\n=== INVOICE RENDER PAYLOAD (document_data) ===")
-        print(json.dumps(document_data, indent=2))
-        print("==============================================\n")
+        # import json
+        # print("\n=== INVOICE RENDER PAYLOAD (document_data) ===")
+        # print(json.dumps(document_data, indent=2))
+        # print("==============================================\n")
 
         if not configuration:
             return HttpResponseBadRequest("configuration is required")

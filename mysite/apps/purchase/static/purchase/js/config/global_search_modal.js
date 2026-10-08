@@ -61,8 +61,10 @@ GlobalSearchModal.init([
         indexdbStore: null,            // null = skip local
         searchFields: ['ACC_CODE', 'ACC_NAME'],
         displayColumns: [
-            { key: 'ACC_CODE', header: 'Code', width: '50px' },
-            { key: 'ACC_NAME', header: 'Account Name', width: '800px' },
+            { key: 'ACC_CODE', header: 'Code', width: '20%' },
+            { key: 'ACC_NAME', header: 'Account Name', width: '30%' },
+            { key: 'ADDRESS', header: 'Account Address', width: '30%' },
+            { key: 'PHONE_OFF', header: 'Account Phone', width: '20%' },
         ],
         excludeFilters: { 'TYPE__exact': 'Group' },   // exclude from local results
         pageSize: 50,
@@ -71,6 +73,8 @@ GlobalSearchModal.init([
             document.getElementById('acc_code').value = item.ACC_CODE;
             document.getElementById('supplier-code').value = item.ACC_CODE;
             document.getElementById('supplier-name').value =item.ACC_NAME
+            document.getElementById('supplier-address').value =item.ADDRESS
+            document.getElementById('supplier-phone-off').value =item.PHONE_OFF
             document.getElementById('product-search').focus();
         }
     },

@@ -1,6 +1,6 @@
 import { openDynamicVoucherModal } from "/static/myledger/js/modals/dynamic_voucher_modal.js";
-import { deleteBill } from "/static/sale/js/bill_crud.js";
-import { ReceiptModal } from "./waste/recept_modal.js";
+import { deleteBill } from "/static/sale/js/delete_bill.js";
+
 import { buildBillPayload } from "./payload.js";
 import {
   getCart,
@@ -77,6 +77,9 @@ function mapPaymentMode(val) {
 }
 
 async function save_bill(event) {
+
+
+  console.log('called save bill')
   event.preventDefault();
   event.stopImmediatePropagation();
 
@@ -115,7 +118,9 @@ async function save_bill(event) {
   const cart = getCart();
   if (!cart.length) return showToast("Cart is empty");
 
-  const acc_code = accCode.value || 112000001;
+  const acc_code = accCode.value;
+  // console.log(accCode, acc_code);
+  if(!acc_code || acc_code === 0 || acc_code === '0') return showToast('Please Select Vendor First (Alt+S)');
 
   // Build payload using payload builder module
   const result = buildBillPayload({
@@ -381,7 +386,7 @@ async function fetchBill(voucherNo = null, load_old_bill = false) {
       // Remarks + others
       if (remarksInput) remarksInput.value = bill.header_remarks || "";
       if (salesMan) salesMan.value = bill.salesman || "";
-
+      if(accCode) accCode.value = bill.header_acc_code
       // // Extra info display
       // if (lastBillAmount && bill.header_acc_code && bill.header_acc_code != 112000001) {
       //   lastBillAmount.style.display = 'block';
@@ -399,8 +404,9 @@ async function fetchBill(voucherNo = null, load_old_bill = false) {
       if (typeof updateTotals === 'function') updateTotals();
 
     } else {
-      const receiptData = buildReceiptData({}, false, bill);
-      call_Receipt_func(receiptData);
+      console.log('Inside fectch invoce else', bill)
+      // const receiptData = buildReceiptData({}, false, bill);
+      // call_Receipt_func(receiptData);
     }
   } catch (error) {
     console.error(error);
@@ -420,6 +426,7 @@ if (btnDeleteBill) {
     const voucherNo = hidden_bill_no.value;
     const pur_inv = 'P';
     await deleteBill(voucherNo,pur_inv)
+    New_bill();
   });
 }
 
@@ -451,61 +458,61 @@ function formatDateForInput(dateStr) {
 
 
 
-function buildReceiptData(payload = {}, offline = false, serverData = {}) {
-  const items = offline ? payload.items || [] : serverData.items || [];
+// function buildReceiptData(payload = {}, offline = false, serverData = {}) {
+//   const items = offline ? payload.items || [] : serverData.items || [];
 
-  const discountPercent = offline
-    ? payload.discountPercent || 0
-    : serverData.discountPercent || 0;
-  const deliveryChargesVal = offline
-    ? payload.deliveryCharges || 0
-    : serverData.delivery_charges || 0;
+//   const discountPercent = offline
+//     ? payload.discountPercent || 0
+//     : serverData.discountPercent || 0;
+//   const deliveryChargesVal = offline
+//     ? payload.deliveryCharges || 0
+//     : serverData.delivery_charges || 0;
 
-  const {
-    total,
-    discount,
-    net_total: calc_net_total,
-  } = calculateTotals(items, discountPercent, deliveryChargesVal);
+//   const {
+//     total,
+//     discount,
+//     net_total: calc_net_total,
+//   } = calculateTotals(items, discountPercent, deliveryChargesVal);
 
-  let net_total = offline
-    ? calc_net_total
-    : Number(serverData.net_total) || calc_net_total;
-  let change_amount = offline ? null : serverData.change_amount || 0;
+//   let net_total = offline
+//     ? calc_net_total
+//     : Number(serverData.net_total) || calc_net_total;
+//   let change_amount = offline ? null : serverData.change_amount || 0;
 
-  return {
-    items: items.map((item) => ({
-      description: item.description,
-      qty: item.qty,
-      price: item.rate || item.price,
-      amount: item.amount,
-    })),
-    shop: offline
-      ? null
-      : serverData.show_header
-        ? serverData.company_name
-        : "",
-    net_total,
-    date: offline
-      ? new Date().toLocaleString()
-      : serverData.date || new Date().toLocaleString(),
-    voucher_no: offline ? `${Date.now()}` : serverData.voucher_no || "N/A",
-    total,
-    discountPercent,
-    discount,
-    delivery_charges: deliveryChargesVal,
-    received_amount: offline
-      ? payload.receivedAmount || 0
-      : serverData.received_amount || 0,
-    change_amount,
-    payment_mode: offline
-      ? payload.Payment_method || "cash"
-      : serverData.payment_mode || "cash",
-    remarks: offline ? payload.remarks || "" : serverData.remarks || "",
-    header_text: offline ? null : serverData.header_text || "",
-    footer_text: offline ? null : serverData.footer_text || "",
-    logo: offline ? null : serverData.logo || null,
-  };
-}
+//   return {
+//     items: items.map((item) => ({
+//       description: item.description,
+//       qty: item.qty,
+//       price: item.rate || item.price,
+//       amount: item.amount,
+//     })),
+//     shop: offline
+//       ? null
+//       : serverData.show_header
+//         ? serverData.company_name
+//         : "",
+//     net_total,
+//     date: offline
+//       ? new Date().toLocaleString()
+//       : serverData.date || new Date().toLocaleString(),
+//     voucher_no: offline ? `${Date.now()}` : serverData.voucher_no || "N/A",
+//     total,
+//     discountPercent,
+//     discount,
+//     delivery_charges: deliveryChargesVal,
+//     received_amount: offline
+//       ? payload.receivedAmount || 0
+//       : serverData.received_amount || 0,
+//     change_amount,
+//     payment_mode: offline
+//       ? payload.Payment_method || "cash"
+//       : serverData.payment_mode || "cash",
+//     remarks: offline ? payload.remarks || "" : serverData.remarks || "",
+//     header_text: offline ? null : serverData.header_text || "",
+//     footer_text: offline ? null : serverData.footer_text || "",
+//     logo: offline ? null : serverData.logo || null,
+//   };
+// }
 
 // Replace i with item in calculateTotals
 function calculateTotals(items = [], discountPercent = 0, deliveryChargesVal = 0) {
@@ -515,19 +522,19 @@ function calculateTotals(items = [], discountPercent = 0, deliveryChargesVal = 0
   return { total, discount, net_total };
 }
 
-function call_Receipt_func(receiptData) {
-  if (directPrinting && directPrinting.checked) {
-    ReceiptModal.print(receiptData);
-  } else {
-    ReceiptModal.open(receiptData);
-    const printBtn = confirmPrint;
-    if (printBtn) {
-      const clonedPrintBtn = printBtn.cloneNode(true);
-      printBtn.replaceWith(clonedPrintBtn);
-      clonedPrintBtn.onclick = () => ReceiptModal.print(receiptData);
-    }
-  }
-}
+// function call_Receipt_func(receiptData) {
+//   if (directPrinting && directPrinting.checked) {
+//     ReceiptModal.print(receiptData);
+//   } else {
+//     ReceiptModal.open(receiptData);
+//     const printBtn = confirmPrint;
+//     if (printBtn) {
+//       const clonedPrintBtn = printBtn.cloneNode(true);
+//       printBtn.replaceWith(clonedPrintBtn);
+//       clonedPrintBtn.onclick = () => ReceiptModal.print(receiptData);
+//     }
+//   }
+// }
 
 export {
   save_bill,
@@ -535,9 +542,9 @@ export {
   old_inv_print_view,
   load_prv_bill,
   fetchBill,
-  buildReceiptData,
+  // buildReceiptData,
   calculateTotals,
-  call_Receipt_func,
+  // call_Receipt_func,
   mapPaymentMode,
   edit_cart,
   Edit_mode,

@@ -1,5 +1,5 @@
 import { POS_MAPPING } from "/static/sale/js/config/constants.js";
-import { features } from "./waste/pos_features.js";
+// import removed
 import {
   multiline,
   paymentMode,
@@ -342,7 +342,7 @@ async function loadBillIntoCart(bill) {
     // Keep the original invoice price for the current packing mode
     prices[String(packingMode)] = itemRate;
 
-    const discountAmt = features.pos_discount_per_item
+    const discountAmt = window.companyConfigurations?.pos?.max_row_discount_percent
       ? Number(item.discount || item.row_discount_amount || 0)
       : 0;
     const discountPct = item.row_discount_percent || 0;
@@ -619,7 +619,7 @@ function handleCartUpdate() {
 
   if (updated) {
     row.querySelector(".amount-input").value = updated.amount.toFixed(2);
-    if (features.pos_discount_per_item) {
+    if (window.companyConfigurations?.pos.max_row_discount_percent >=0) {
       const discAmtEl = row.querySelector(".discount_per_item-input");
       const discPctEl = row.querySelector(".discount_percent_per_item-input");
       if (discAmtEl) discAmtEl.value = updated.discount.toFixed(2);

@@ -42,9 +42,9 @@ SEARCH_REGISTRY = {
     },
     'myaccounts.Accounts': {
         'primary_key': 'ACC_CODE',
-        'display_fields': ['ACC_CODE','ACC_NAME'],
-        'display_headers': ['ACC_CODE','ACC_NAME'],
-        'return_fields': ['ACC_CODE','ACC_NAME'],
+        'display_fields': ['ACC_CODE','ACC_NAME','ADDRESS','PHONE_OFF'],
+        'display_headers': ['ACC_CODE','ACC_NAME','ADDRESS','PHONE_OFF'],
+        'return_fields': ['ACC_CODE','ACC_NAME','ADDRESS','PHONE_OFF'],
         'default_order': 'ACC_CODE',
         'page_size': 50,
         'filters': {'TYPE__exact': 'Detail'},

@@ -164,7 +164,7 @@ btnConvertToBill.addEventListener('click',async (e)=>{
 
 
 
-import { deleteBill } from "/static/sale/js/bill_crud.js";
+import { deleteBill } from "/static/sale/js/delete_bill.js";
 
 
 if (btnDeleteBill) {

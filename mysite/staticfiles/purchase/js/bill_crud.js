@@ -1,6 +1,6 @@
 import { openDynamicVoucherModal } from "/static/myledger/js/modals/dynamic_voucher_modal.js";
 import { deleteBill } from "/static/sale/js/bill_crud.js";
-import { ReceiptModal } from "./waste/recept_modal.js";
+
 import { buildBillPayload } from "./payload.js";
 import {
   getCart,

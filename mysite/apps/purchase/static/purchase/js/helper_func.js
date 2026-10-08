@@ -14,13 +14,13 @@ import {
   
 } from "./cart.js";
 
-import { ReceiptModal } from "./waste/recept_modal.js";
-import { features, get_features } from "./waste/pos_features.js";
+
+// import { features, get_features } from "./waste/pos_features.js";
 import {
   fetchBill,
-  buildReceiptData,
+  // buildReceiptData,
   calculateTotals,
-  call_Receipt_func
+  // call_Receipt_func
 } from "./bill_crud.js";
 
 import {
@@ -103,7 +103,7 @@ document.addEventListener("keydown", function (e) {
     e.preventDefault();
     if (btnConvertToBill) btnConvertToBill.click();
   }
-  if (e.ctrlKey && e.key.toLowerCase() === "s") {
+  if (e.ctrlKey && e.key.toLowerCase() === "j") {
     e.preventDefault();
     if (btnSaveBill) btnSaveBill.click();
   }
@@ -192,22 +192,102 @@ document.addEventListener("keydown", function (e) {
     r.classList.contains("selected-row")
   );
 
-  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-    e.preventDefault();
-
-    if (currentIndex !== -1) {
-      rows[currentIndex].classList.remove("selected-row");
+  
+  
+  
+  if(document.activeElement === searchInput){
+  
+      console.log('iam here ')
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+    
+        if (currentIndex !== -1) {
+          rows[currentIndex].classList.remove("selected-row");
+        }
+    
+        if (e.key === "ArrowDown") {
+          currentIndex = (currentIndex + 1) % rows.length;
+        } else if (e.key === "ArrowUp") {
+          currentIndex = (currentIndex - 1 + rows.length) % rows.length;
+        }
+    
+        rows[currentIndex].classList.add("selected-row");
+        rows[currentIndex].scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }
+  
+    if (e.key == '`') {
+      e.preventDefault();
+  
+      const selectedRow = document.querySelector(".cart-item-row.selected-row");
+  
+      if (!selectedRow) return;
+  
+      const qtyInput = selectedRow.querySelector(".qty-input");
+  
+      if (qtyInput) {
+        qtyInput.focus();
+        qtyInput.select(); // optional: selects existing quantity
+      }
     }
 
-    if (e.key === "ArrowDown") {
-      currentIndex = (currentIndex + 1) % rows.length;
-    } else if (e.key === "ArrowUp") {
-      currentIndex = (currentIndex - 1 + rows.length) % rows.length;
-    }
 
-    rows[currentIndex].classList.add("selected-row");
-    rows[currentIndex].scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+
+
+
+      // _______________________ Cart TAB Navigation _______________________
+  if (e.key === "Tab" && !e.shiftKey) {
+    const activeElement = document.activeElement;
+
+    // Check if currently focused element is a cart delete button
+    if (activeElement?.classList.contains("remove-item-btn")) {
+      const currentRow = activeElement.closest(".cart-item-row");
+
+      if (!currentRow) return;
+
+      const rows = Array.from(getAllCartRows());
+      const currentIndex = rows.indexOf(currentRow);
+
+      if (currentIndex === -1) return;
+
+      e.preventDefault();
+
+      // ------------------------------------------------
+      // If this is NOT the last row:
+      // Go to next row's Qty
+      // ------------------------------------------------
+      if (currentIndex < rows.length - 1) {
+        const nextRow = rows[currentIndex + 1];
+        const nextQty = nextRow.querySelector(".qty-input");
+
+        if (nextQty) {
+          // Update selected row
+          rows.forEach(row => row.classList.remove("selected-row"));
+          nextRow.classList.add("selected-row");
+
+          nextQty.focus();
+          nextQty.select();
+        }
+
+        return;
+      }
+
+      // ------------------------------------------------
+      // If this IS the last row:
+      // Go to Search
+      // ------------------------------------------------
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select?.();
+      }
+    }
   }
+
+
+
+
+
 });
 
 if (lastBillAmount) {
@@ -308,9 +388,9 @@ export {
   selectLastRow,
   refreshCartUI,
   fetchBill,
-  buildReceiptData,
+  // buildReceiptData,
   showToast,
   resetUI,
   calculateTotals,
-  call_Receipt_func,
+  // call_Receipt_func,
 };

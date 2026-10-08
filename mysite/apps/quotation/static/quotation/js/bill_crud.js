@@ -307,7 +307,7 @@ async function fetchBill(voucherNo = null, load_old_bill = false, convertIntoBil
       if (cardNumber) cardNumber.value = bill.header_card_last4 ? `*******${bill.header_card_last4}` : "";
 
       if (bill.header_acc_code !== 112000001) lastBillAmount.innerHTML = 'Account Code: ' + bill.header_acc_code;
-
+      if(accCode) accCode.value = bill.header_acc_code;
       discountInput.value = bill.header_discount_percent || 0;
       deliveryCharges.value = bill.header_delivery_charges || 0;
       remarksInput.value = bill.header_remarks || "";

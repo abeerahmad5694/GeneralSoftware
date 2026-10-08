@@ -73,7 +73,7 @@
         </div>
         <div class="card-row">
           <label>Tele:</label>
-          <input type="text" id="supplier-tele" readonly>
+          <input type="text" id="supplier-phone-off" readonly>
         </div>
         <!-- <div class="card-row">
       <button type="button" class="btn-gray">Supl. Ledger</button>
@@ -395,7 +395,7 @@
 </div>
 
 <div class="bottom-buttons">
-  <button type="button" id="btn-save-bill" class="bottom-btn primary" tabindex="8" data-shortcut="ctrl+s">
+  <button type="button" id="btn-save-bill" class="bottom-btn primary" tabindex="8" data-shortcut="ctrl+e">
     Save(Ctrl+S)
   </button>
   <button type="button" id="btn-new-bill" class="bottom-btn" tabindex="9">
@@ -408,7 +408,7 @@
     id="btnDeleteBill"
     class="bottom-btn primary"
     tabindex="8"
-    data-shortcut="ctrl+s"
+    data-shortcut="ctrl+d"
   >
     Delete
   </button>
@@ -461,7 +461,7 @@
 
 </div>
 {% include 'myledger/modals/dynamic_voucher_modal.html' with mode='modal' %}
-{% include "sale/receipt_modal.html" %}
+{% comment %} {% include "sale/receipt_modal.html" %} {% endcomment %}
 
 
 
@@ -474,8 +474,7 @@
 {% comment %}
 <script type="module" src="{% static 'sale/js/helper_func.js' %}"></script> {% endcomment %}
 
-<script src="{% static "sale/js/vendor/qz/qz_tray.js" %}"></script>
-<script type="module" src="{% static "sale/js/waste/recept_modal.js" %}"></script>
+{% comment %} <script type="module" src="{% static "sale/js/waste/recept_modal.js" %}"></script> {% endcomment %}
 
 {% endblock content %}
 

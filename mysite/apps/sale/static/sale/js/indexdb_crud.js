@@ -2,7 +2,16 @@ import {
   getCookie,
   showToast,
 } from "./helper_func.js";
-import { barcode_config } from './waste/pos_features.js';
+// import { barcode_config } from './waste/pos_features.js';
+let barcode_config ={
+    price_base:'Normal',
+    total_bc_digits:13,
+    left_delete:2,
+    right_delete:1,
+    item_bc:5,
+    kg:2,
+    grm:3,
+}
 import {
   getDB,
   addRecord,

@@ -2,6 +2,11 @@
    POS Field and Packing Mode Mapping Configuration
    ══════════════════════════════════════════════════════ */
 
+
+
+
+
+export const applyRistrictionsInPurchase = false;
 export const POS_MAPPING = {
   // Mapping of inventory model fields to UI properties
   product: {
@@ -12,6 +17,8 @@ export const POS_MAPPING = {
     category: "category",
   
   },
+
+
 
   // Packing mode mappings (1=base, 2=carton, 3=dzn, 4=wholesale)
   packingModes: {

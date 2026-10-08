@@ -1,5 +1,5 @@
-import { POS_MAPPING } from "/static/sale/js/config/constants.js";
-import { features } from "./waste/pos_features.js";
+import { POS_MAPPING, applyRistrictionsInPurchase } from "/static/sale/js/config/constants.js";
+// import removed
 import {
   multiline,
   paymentMode,
@@ -330,7 +330,7 @@ async function loadBillIntoCart(bill) {
     // Keep the original invoice price for the current packing mode
     prices[String(packingMode)] = itemRate;
 
-    const discountAmt = features.pos_discount_per_item
+    const discountAmt = (!applyRistrictionsInPurchase || window.companyConfigurations?.pos_discount_per_item)
       ? Number(item.discount || item.row_discount_amount || 0)
       : 0;
     const discountPct = item.row_discount_percent || 0;
@@ -613,7 +613,7 @@ function handleCartUpdate() {
     discount_percent_per_item: discountPercent
   };
 
-  if (features.pos_discount_per_item) {
+  if (!applyRistrictionsInPurchase || window.companyConfigurations?.pos_discount_per_item) {
     if (this.classList.contains("discount_per_item-input")) {
       changes.discount = Number(row.querySelector(".discount_per_item-input").value) || 0;
       changes.discount_percent_per_item = 0;
@@ -638,7 +638,7 @@ function handleCartUpdate() {
 
   if (updated) {
     row.querySelector(".amount-input").value = updated.amount.toFixed(2);
-    if (features.pos_discount_per_item) {
+    if (!applyRistrictionsInPurchase || window.companyConfigurations?.pos_discount_per_item) {
       const discAmtEl = row.querySelector(".discount_per_item-input");
       const discPctEl = row.querySelector(".discount_percent_per_item-input");
       if (discAmtEl) discAmtEl.value = updated.discount.toFixed(2);

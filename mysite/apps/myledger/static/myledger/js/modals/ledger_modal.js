@@ -42,10 +42,12 @@ GlobalSearchModal.init([
         modelName: 'Accounts',
         primaryKey: 'ACC_CODE',
         indexdbStore: null,            // null = skip local
-        searchFields: ['ACC_CODE', 'ACC_NAME'],
+        searchFields: ['ACC_CODE', 'ACC_NAME' ],
         displayColumns: [
-            { key: 'ACC_CODE', header: 'Code', width: '80px' },
-            { key: 'ACC_NAME', header: 'Account Name' },
+            { key: 'ACC_CODE', header: 'Code', width: '20%' },
+            { key: 'ACC_NAME', header: 'Account Name', width: '30%' },
+            { key: 'ADDRESS', header: 'Address', width: '30%' },
+            { key: 'PHONE_OFF', header: 'Phone Number', width: '20%' },
         ],
         excludeFilters: { 'TYPE__exact': 'Group' },   // exclude from local results
         pageSize: 50,
@@ -266,3 +268,119 @@ document.getElementById('ledgerModalOverlay')?.addEventListener('click', functio
 // ModalStack.closeTop() calls closeLedgerModal() via the registered callback.
 // Sub-modals (JV, DynamicVoucher) also register themselves, so Esc
 // closes only the topmost layer without manual cross-modal checks.
+
+
+// ============================================================
+// Print Ledger  — opens a tiny print window (most reliable)
+// ============================================================
+document.getElementById('lm_printBtn')?.addEventListener('click', () => {
+
+    // 1. Collect header info
+    const accCode  = document.getElementById('lm_ACC_CODE')?.value  || '';
+    const accName  = document.getElementById('lm_ACC_NAME')?.value  || '';
+    const address  = document.getElementById('lm_ADDRESS')?.value   || '';
+    const phone    = document.getElementById('lm_PHONE_OFF')?.value || document.getElementById('lm_MOBILE_NO')?.value || '';
+    const dateFrom = document.getElementById('lm_DATE_FROM')?.value || '';
+    const dateTo   = document.getElementById('lm_DATE_TO')?.value   || '';
+
+    // 2. Company info
+    const cfg      = window.companyConfigurations || {};
+    const firmName = cfg.company_name || cfg.name || '';
+    const logoSrc  = cfg.logo || '';
+
+    // 3. Totals from footer
+    const drVal  = document.querySelector('.dr-val')?.textContent  || '0.00';
+    const crVal  = document.querySelector('.cr-val')?.textContent  || '0.00';
+    const balVal = document.querySelector('.bal-val')?.textContent || '0.00';
+
+    // 4. Clone visible table rows (respects active filter)
+    let rowsHtml = '';
+    document.querySelectorAll('#lm_ledger-body tr').forEach(row => {
+        if (row.style.display === 'none') return;
+        rowsHtml += row.outerHTML;
+    });
+
+    if (!rowsHtml) return alert('No ledger data to print. Please generate the ledger first.');
+
+    // 5. Build complete HTML for print window
+    const logoHtml = logoSrc ? `<img src="${logoSrc}" style="max-height:60px;">` : '';
+
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Ledger — ${accName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #000; padding: 16px; }
+
+    .header { display: flex; align-items: center; gap: 16px; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }
+    .header img { max-height: 60px; }
+    .firm-name { font-size: 18px; font-weight: bold; }
+
+    .client-info { margin-bottom: 12px; }
+    .client-info table { border-collapse: collapse; }
+    .client-info td { padding: 2px 10px 2px 0; vertical-align: top; }
+    .client-info td:first-child { font-weight: bold; color: #444; width: 70px; }
+
+    table.ledger { width: 100%; border-collapse: collapse; font-size: 10px; }
+    table.ledger th, table.ledger td { border: 1px solid #bbb; padding: 3px 6px; }
+    table.ledger th { background: #eee; font-weight: bold; }
+    table.ledger td:nth-child(5),
+    table.ledger td:nth-child(6),
+    table.ledger td:nth-child(7),
+    table.ledger td:nth-child(8) { text-align: right; }
+
+    .summary-row td { border-top: 2px solid #000; background: #f5f5f5; font-weight: bold; }
+    .summary-row td:nth-child(2),
+    .summary-row td:nth-child(3),
+    .summary-row td:nth-child(4) { text-align: right; }
+
+    @media print {
+      body { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    ${logoHtml}
+    <div class="firm-name">${firmName}</div>
+  </div>
+
+  <div class="client-info">
+    <table>
+      <tr><td>Account:</td><td>${accCode} — ${accName}</td></tr>
+      ${address ? `<tr><td>Address:</td><td>${address}</td></tr>` : ''}
+      ${phone   ? `<tr><td>Phone:</td><td>${phone}</td></tr>`     : ''}
+      <tr><td>Period:</td><td>${dateFrom} &rarr; ${dateTo}</td></tr>
+    </table>
+  </div>
+
+  <table class="ledger">
+    <thead>
+      <tr>
+        <th>Type</th><th>Date</th><th>Voucher No</th>
+        <th>Description</th><th>Amount</th>
+        <th>Debit</th><th>Credit</th><th>Balance</th>
+      </tr>
+    </thead>
+    <tbody>${rowsHtml}</tbody>
+    <tfoot>
+      <tr class="summary-row">
+        <td colspan="5">Total</td>
+        <td>${drVal}</td>
+        <td>${crVal}</td>
+        <td>${balVal}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <script>window.onload = function(){ window.print(); window.close(); }<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=900,height=700');
+    win.document.write(html);
+    win.document.close();
+});

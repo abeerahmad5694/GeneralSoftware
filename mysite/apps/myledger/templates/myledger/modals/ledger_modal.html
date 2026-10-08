@@ -34,7 +34,7 @@
           </div>
         </div>
         <!-- Row 2 -->
-        <div class="lh-row">
+        <div class="hidden lh-row">
           <div class="lh-field flex-1">
             <label>Address</label>
             <input type="text" id="lm_ADDRESS" placeholder="">
@@ -79,7 +79,7 @@
           </div>
           <div class="dg-row">
             <label class="date-label"><span class="green-text">To</span> <input type="date" value="2026-05-16" id="lm_DATE_TO"></label>
-            <button class="btn btn-print">Print Ledger</button>
+            <button class="btn btn-print" id="lm_printBtn">Print Ledger</button>
           </div>
         </div>
 
@@ -139,6 +139,120 @@
 {% include 'myaccounts/modals/global_account_form_modal.html' %}
 {% include 'myledger/modals/dynamic_voucher_modal.html' with mode='modal' %}
 {% include 'myledger/modals/jv_voucher_modal.html' with mode='modal' %}
+
+<!-- ========== PRINT AREA (hidden on screen, visible only on print) ========== -->
+<div id="lm-print-area" style="display:none;">
+  <div class="lm-print-header">
+    <div class="lm-print-logo" id="lm-print-logo-wrap"></div>
+    <div class="lm-print-firm" id="lm-print-firm-name"></div>
+  </div>
+  <div class="lm-print-client">
+    <table class="lm-print-client-table">
+      <tr><td><strong>Account:</strong></td><td id="lm-print-acc-name"></td></tr>
+      <tr><td><strong>Address:</strong></td><td id="lm-print-address"></td></tr>
+      <tr><td><strong>Phone:</strong></td><td id="lm-print-phone"></td></tr>
+      <tr><td><strong>Period:</strong></td><td id="lm-print-period"></td></tr>
+    </table>
+  </div>
+  <table class="lm-print-table">
+    <thead>
+      <tr>
+        <th>Type</th><th>Date</th><th>Voucher No</th>
+        <th>Description</th><th>Amount</th>
+        <th>Debit</th><th>Credit</th><th>Balance</th>
+      </tr>
+    </thead>
+    <tbody id="lm-print-tbody"></tbody>
+    <tfoot>
+      <tr class="lm-print-total-row">
+        <td colspan="5"><strong>Summary</strong></td>
+        <td><strong id="lm-print-total-dr"></strong></td>
+        <td><strong id="lm-print-total-cr"></strong></td>
+        <td><strong id="lm-print-total-bal"></strong></td>
+      </tr>
+    </tfoot>
+  </table>
+</div>
+
+<style>
+/* ---- Screen: hide print area ---- */
+#lm-print-area { display: none !important; }
+
+/* ---- Print: hide everything EXCEPT print area ---- */
+@media print {
+  body > *:not(#lm-print-area),
+  .ledger-modal-overlay > *,
+  .ledger-page-wrapper > * { display: none !important; }
+
+  #lm-print-area {
+    display: block !important;
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    color: #000;
+    padding: 10px;
+  }
+
+  .lm-print-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 2px solid #000;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .lm-print-logo img { max-height: 60px; }
+
+  .lm-print-firm {
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  .lm-print-client {
+    margin-bottom: 10px;
+  }
+
+  .lm-print-client-table td {
+    padding: 2px 8px;
+    vertical-align: top;
+  }
+
+  .lm-print-client-table td:first-child {
+    width: 80px;
+    color: #444;
+  }
+
+  .lm-print-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+
+  .lm-print-table th,
+  .lm-print-table td {
+    border: 1px solid #ccc;
+    padding: 3px 6px;
+    text-align: left;
+  }
+
+  .lm-print-table th {
+    background: #f0f0f0;
+    font-weight: bold;
+  }
+
+  .lm-print-table td:nth-child(5),
+  .lm-print-table td:nth-child(6),
+  .lm-print-table td:nth-child(7),
+  .lm-print-table td:nth-child(8) {
+    text-align: right;
+  }
+
+  .lm-print-total-row td {
+    border-top: 2px solid #000;
+    background: #f9f9f9;
+  }
+}
+</style>
 
 
 
